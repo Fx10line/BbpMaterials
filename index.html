@@ -10,19 +10,15 @@
 
     <header class="ust-bilgi">
         <h1>BBP Kunststoffwerk - İnteraktif Akış Haritası</h1>
-        <p style="margin:5px 0 0 0; font-size:14px; color:#aaa;">Cihazları mouse ile sürükleyerek yerlerini değiştirebilirsiniz.</p>
+        <p style="margin:5px 0 0 0; font-size:14px; color:#aaa;">Cihazları sürükleyin. Sarı noktalardan (çıkış), Yeşil noktalara (giriş) çizgi çekerek bağlayın.</p>
     </header>
 
-    <!-- GENİŞ FABRİKA SAHASI (Sürüklenebilir alan) -->
     <main id="fabrika-sahasi">
-        <!-- Çizgilerin çizileceği devasa görünmez tuval -->
         <canvas id="cizim-alani"></canvas>
-        
-        <!-- Tüm cihazların içine atılacağı kapsayıcı -->
         <div id="cihazlar-kapsayici"></div>
     </main>
 
-   <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
+    <!-- DETAY PENCERESİ (MODAL) -->
     <div id="detay-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
@@ -31,20 +27,27 @@
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
+            <!-- YENİ EKLENEN: Gelen Bağlantıları Gösterme Alanı -->
+            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 5px 0; color: #2c3e50;">📥 Gelen Malzemeler (Kaynaklar)</h4>
+                <ul id="gelen-listesi" style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">
+                    <!-- JavaScript burayı otomatik dolduracak -->
+                </ul>
+            </div>
+            
             <div id="modal-baglanti-alani">
                 <hr>
-                <h4 style="margin-bottom: 5px;">Hedef Bağlantılar</h4>
-                <p style="font-size: 11px; color: #666; margin-top: 0;">Birden fazla cihaza bağlamak için araya virgül koyun. (Örn: firin_7, makina_2)</p>
+                <h4 style="margin-bottom: 5px;">📤 Giden Bağlantılar (Hedefler)</h4>
+                <p style="font-size: 11px; color: #666; margin-top: 0;">Silmek veya elle eklemek için burayı kullanabilirsiniz.</p>
                 
                 <div id="silo-kanallari-inputlari">
-                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input" placeholder="Örn: firin_1, makina_5">
-                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input" placeholder="Boş">
-                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input" placeholder="Boş">
-                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input" placeholder="Boş">
+                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
+                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input">
+                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input">
+                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input">
                 </div>
-                
                 <div id="firin-hedef-inputu" style="display: none;">
-                    <label>Hedef Makinalar:</label> <input type="text" id="modal-firin-hedef" class="modal-input" placeholder="Örn: makina_1, makina_2">
+                    <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input">
                 </div>
             </div>
             <button id="modal-kaydet" class="kaydet-btn">Kaydet ve Güncelle</button>
