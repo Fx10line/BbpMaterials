@@ -3,69 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Fabrika Malzeme Akış ve Takip Sistemi">
+    <meta name="description" content="Fabrika Malzeme Akış Sistemi">
     <title>BBP Kunststoffwerk - Üretim Takip</title>
-    <!-- CSS Dosyası Bağlantısı -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Üst Başlık -->
+    <!-- ÇİZGİLERİN ÇİZİLECEĞİ GÖRÜNMEZ TUVAL (CANVAS) -->
+    <canvas id="cizim-alani"></canvas>
+
     <header class="ust-bilgi">
-        <h1>BBP Kunststoffwerk - Üretim Takip Panosu</h1>
+        <h1>BBP Kunststoffwerk - Canlı Akış Haritası</h1>
     </header>
 
-    <!-- Ana Çerçeve (3 Sütunlu Grid) -->
     <main class="pano-kapsayici">
-
-        <!-- 1. SÜTUN: SİLOLAR (JavaScript ile 14 Adet Doldurulacak) -->
+        <!-- 1. SÜTUN: SİLOLAR -->
         <section class="sutun" id="silolar-sutunu">
             <h2>SİLOLAR</h2>
-            <p class="aciklama">Hammadde Depolama</p>
-            <div id="silo-listesi"></div> <!-- Silolar buraya çizilecek -->
+            <div id="silo-listesi"></div>
         </section>
 
-        <!-- 2. SÜTUN: FIRINLAR (JavaScript ile 16 Adet Doldurulacak) -->
+        <!-- 2. SÜTUN: FIRINLAR -->
         <section class="sutun" id="firinlar-sutunu">
             <h2>KURUTMA FIRINLARI</h2>
-            <p class="aciklama">Nem ve Sıcaklık Kontrolü</p>
-            <div id="firin-listesi"></div> <!-- Fırınlar buraya çizilecek -->
+            <div id="firin-listesi"></div>
         </section>
 
-        <!-- 3. SÜTUN: MAKİNALAR (JavaScript ile 19 Adet Doldurulacak) -->
+        <!-- 3. SÜTUN: MAKİNALAR -->
         <section class="sutun" id="makinalar-sutunu">
             <h2>ENJEKSİYON MAKİNALARI</h2>
-            <p class="aciklama">Üretim Hattı</p>
-            <div id="makina-listesi"></div> <!-- Makinalar buraya çizilecek -->
+            <div id="makina-listesi"></div>
         </section>
-
     </main>
 
     <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
-    <!-- Bir siloya tıklayınca bu pencere görünür hale gelir -->
     <div id="detay-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
             <h3 id="modal-baslik">Detay Ayarları</h3>
             
-            <!-- Güncellenecek Veri Alanı -->
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
-            <!-- Silolar için 4 Kanal Bilgisi (Sadece silolarda görünür) -->
-            <div id="modal-kanallar-alani" style="display: none;">
-                <h4>Çıkış Kanalları</h4>
-                <label>Kanal 1 (Hedef):</label> <input type="text" id="modal-kanal-1" class="modal-input">
-                <label>Kanal 2 (Hedef):</label> <input type="text" id="modal-kanal-2" class="modal-input">
-                <label>Kanal 3 (Hedef):</label> <input type="text" id="modal-kanal-3" class="modal-input">
-                <label>Kanal 4 (Hedef):</label> <input type="text" id="modal-kanal-4" class="modal-input">
+            <!-- Silo ve Fırın Bağlantı Ayarları -->
+            <div id="modal-baglanti-alani">
+                <hr>
+                <h4>Hedef Bağlantılar (Örn: firin_1 veya makina_5)</h4>
+                <div id="silo-kanallari-inputlari">
+                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input" placeholder="Boş">
+                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input" placeholder="Boş">
+                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input" placeholder="Boş">
+                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input" placeholder="Boş">
+                </div>
+                <div id="firin-hedef-inputu" style="display: none;">
+                    <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input" placeholder="Boş">
+                </div>
             </div>
 
             <button id="modal-kaydet" class="kaydet-btn">Kaydet ve Güncelle</button>
         </div>
     </div>
 
-    <!-- JavaScript Dosyası Bağlantısı -->
     <script src="js/script.js"></script>
 </body>
 </html>
