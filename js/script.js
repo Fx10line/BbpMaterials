@@ -1,11 +1,12 @@
-// --- 1. VERİ TABANI (X, Y Koordinatları Eklendi) ---
+// --- 1. VERİ TABANI (Virgüllü Çoklu Bağlantı Desteği) ---
 
 let silolar = [];
 for (let i = 1; i <= 14; i++) {
     silolar.push({
         id_str: `silo_${i}`, isim: `Silo ${i}`, materyal: "PP", aktif: true,
-        kanallar: (i === 1) ? ["firin_1", "makina_2", "Boş", "Boş"] : ["Boş", "Boş", "Boş", "Boş"],
-        x: 50, y: i * 140 // Sol tarafa dikey olarak dizer
+        // ÖRNEK: Silo 1'in Kanal 1'i hem Fırın 1'e hem de Makina 2'ye gidiyor.
+        kanallar: (i === 1) ? ["firin_1, makina_2", "Boş", "Boş", "Boş"] : ["Boş", "Boş", "Boş", "Boş"],
+        x: 50, y: i * 140
     });
 }
 
@@ -13,8 +14,9 @@ let firinlar = [];
 for (let i = 1; i <= 16; i++) {
     firinlar.push({
         id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true,
-        hedef: (i === 1) ? "makina_1" : "Boş",
-        x: 500, y: i * 130 // Orta alana dikey olarak dizer
+        // ÖRNEK: Fırın 1 hem Makina 1'e hem Makina 3'e malzeme veriyor.
+        hedef: (i === 1) ? "makina_1, makina_3" : "Boş",
+        x: 500, y: i * 130 
     });
 }
 
@@ -22,21 +24,17 @@ let makinalar = [];
 for (let i = 1; i <= 19; i++) {
     makinalar.push({
         id_str: `makina_${i}`, isim: `Makina ${i}`, urun: "Kapak V2", aktif: true, umbau: false,
-        x: 1000, y: i * 110 // Sağ alana dikey olarak dizer
+        x: 1000, y: i * 110 
     });
 }
 
 // --- 2. HTML OLUŞTURMA ---
 function ekranlariCiz() {
     const kapsayici = document.getElementById('cihazlar-kapsayici');
-    kapsayici.innerHTML = ""; // Temizle
+    kapsayici.innerHTML = ""; 
 
-    // Görsel belirleyiciler (Emojiler yerine ileride img etiketi koyabilirsin)
-    const siloIkon = "🛢️";
-    const firinIkon = "🔥";
-    const makinaIkon = "⚙️";
+    const siloIkon = "🛢️"; const firinIkon = "🔥"; const makinaIkon = "⚙️";
 
-    // Siloları Çiz
     silolar.forEach((s, i) => {
         kapsayici.innerHTML += `
             <div class="kutu" id="${s.id_str}" data-tip="silo" data-index="${i}" style="left: ${s.x}px; top: ${s.y}px;">
@@ -50,7 +48,6 @@ function ekranlariCiz() {
             </div>`;
     });
 
-    // Fırınları Çiz
     firinlar.forEach((f, i) => {
         kapsayici.innerHTML += `
             <div class="kutu" id="${f.id_str}" data-tip="firin" data-index="${i}" style="left: ${f.x}px; top: ${f.y}px;">
@@ -64,7 +61,6 @@ function ekranlariCiz() {
             </div>`;
     });
 
-    // Makinaları Çiz
     makinalar.forEach((m, i) => {
         kapsayici.innerHTML += `
             <div class="kutu" id="${m.id_str}" data-tip="makina" data-index="${i}" style="left: ${m.x}px; top: ${m.y}px;">
@@ -80,40 +76,25 @@ function ekranlariCiz() {
     });
 }
 
-// --- 3. SÜRÜKLE & BIRAK (DRAG & DROP) MANTIĞI ---
-let suruklenenKutu = null;
-let offset = { x: 0, y: 0 };
-let suruklendiMi = false; // Tıklama ile sürüklemeyi ayırt etmek için
+// --- 3. SÜRÜKLE & BIRAK ---
+let suruklenenKutu = null; let offset = { x: 0, y: 0 }; let suruklendiMi = false;
 
 document.addEventListener('mousedown', (e) => {
     const kutu = e.target.closest('.kutu');
-    // Eğer butona veya lambaya tıklamadıysa sürüklemeyi başlat
     if (kutu && !e.target.closest('button') && !e.target.classList.contains('umbau-lambasi')) {
-        suruklenenKutu = kutu;
-        suruklendiMi = false;
-        
-        // Farenin kutu içindeki tıklama noktasını hesapla
+        suruklenenKutu = kutu; suruklendiMi = false;
         const rect = kutu.getBoundingClientRect();
-        const sahaRect = document.getElementById('fabrika-sahasi').getBoundingClientRect();
-        
-        offset.x = e.clientX - rect.left;
-        offset.y = e.clientY - rect.top;
-        
-        kutu.style.zIndex = 1000; // Sürüklerken en üste al
+        offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top;
+        kutu.style.zIndex = 1000; 
     }
 });
 
 document.addEventListener('mousemove', (e) => {
     if (suruklenenKutu) {
-        suruklendiMi = true; // Kutu hareket etti
+        suruklendiMi = true; 
         const sahaRect = document.getElementById('fabrika-sahasi').getBoundingClientRect();
-        
-        // Yeni pozisyonu hesapla (Ekranın kaydırma oranını da hesaba kat)
-        let yeniX = (e.clientX - sahaRect.left) - offset.x;
-        let yeniY = (e.clientY - sahaRect.top) - offset.y;
-        
-        suruklenenKutu.style.left = yeniX + 'px';
-        suruklenenKutu.style.top = yeniY + 'px';
+        suruklenenKutu.style.left = (e.clientX - sahaRect.left - offset.x) + 'px';
+        suruklenenKutu.style.top = (e.clientY - sahaRect.top - offset.y) + 'px';
     }
 });
 
@@ -121,31 +102,22 @@ document.addEventListener('mouseup', () => {
     if (suruklenenKutu) {
         suruklenenKutu.style.zIndex = "";
         
-        // YENİ EKLENEN BÖLÜM: Kutunun yeni konumunu (X ve Y) bulup hafızaya (diziye) kaydet
+        // Yeni pozisyonu kaydet
         const yeniX = parseInt(suruklenenKutu.style.left);
         const yeniY = parseInt(suruklenenKutu.style.top);
         const tip = suruklenenKutu.dataset.tip;
         const index = parseInt(suruklenenKutu.dataset.index);
 
-        if (tip === "silo") {
-            silolar[index].x = yeniX;
-            silolar[index].y = yeniY;
-        } else if (tip === "firin") {
-            firinlar[index].x = yeniX;
-            firinlar[index].y = yeniY;
-        } else if (tip === "makina") {
-            makinalar[index].x = yeniX;
-            makinalar[index].y = yeniY;
-        }
+        if (tip === "silo") { silolar[index].x = yeniX; silolar[index].y = yeniY; } 
+        else if (tip === "firin") { firinlar[index].x = yeniX; firinlar[index].y = yeniY; } 
+        else if (tip === "makina") { makinalar[index].x = yeniX; makinalar[index].y = yeniY; }
         
         suruklenenKutu = null;
-        // Tıklama olayının (Modal açılışının) sürükleme bittikten hemen sonra tetiklenmesini engelle
         setTimeout(() => { suruklendiMi = false; }, 50); 
     }
 });
 
-
-// --- 4. CANVAS (ANİMASYONLU ÇİZGİLER) ---
+// --- 4. CANVAS (VİRGÜLLÜ ÇOKLU BAĞLANTI MOTORU) ---
 const canvas = document.getElementById('cizim-alani');
 const ctx = canvas.getContext('2d');
 let dashOffset = 0;
@@ -157,35 +129,44 @@ function akisCizgileriniGuncelle() {
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Silolardan çıkan çizgiler (Virgülle ayrılmış hedefleri böler)
     silolar.forEach(silo => {
         if (!silo.aktif) return;
-        silo.kanallar.forEach(hedefId => {
-            if (hedefId && hedefId !== "Boş") cizgiCiz(silo.id_str, hedefId, "#3498db"); // Mavi Çizgi
+        silo.kanallar.forEach(kanalVerisi => {
+            if (kanalVerisi && kanalVerisi !== "Boş") {
+                // "firin_7, makina_2" yazısını virgülden böler ve boşlukları siler
+                const hedefler = kanalVerisi.split(',').map(isim => isim.trim());
+                hedefler.forEach(hedefId => {
+                    cizgiCiz(silo.id_str, hedefId, "#3498db"); // Mavi
+                });
+            }
         });
     });
 
+    // Fırınlardan çıkan çizgiler (Virgülle ayrılmış hedefleri böler)
     firinlar.forEach(firin => {
         if (!firin.aktif) return;
-        if (firin.hedef && firin.hedef !== "Boş") cizgiCiz(firin.id_str, firin.hedef, "#e67e22"); // Turuncu Çizgi
+        if (firin.hedef && firin.hedef !== "Boş") {
+            const hedefler = firin.hedef.split(',').map(isim => isim.trim());
+            hedefler.forEach(hedefId => {
+                cizgiCiz(firin.id_str, hedefId, "#e67e22"); // Turuncu
+            });
+        }
     });
 }
 
 function cizgiCiz(kaynakId, hedefId, renk) {
     const kaynak = document.getElementById(kaynakId);
     const hedef = document.getElementById(hedefId);
-    if (!kaynak || !hedef) return;
+    if (!kaynak || !hedef) return; // Eğer yanlış isim yazıldıysa hata vermesin, sadece çizmesin
 
-    // Sürüklenebilir alan içindeki mevcut pozisyonlarını alıyoruz
     const startX = parseInt(kaynak.style.left) + (kaynak.offsetWidth / 2);
     const startY = parseInt(kaynak.style.top) + (kaynak.offsetHeight / 2);
-    
     const endX = parseInt(hedef.style.left) + (hedef.offsetWidth / 2);
     const endY = parseInt(hedef.style.top) + (hedef.offsetHeight / 2);
 
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-    
-    // Yılan gibi kıvrılan (Bezier) akış
     const ortaX = (startX + endX) / 2;
     ctx.bezierCurveTo(ortaX, startY, ortaX, endY, endX, endY);
 
@@ -202,14 +183,12 @@ function animasyonDongusu() {
     requestAnimationFrame(animasyonDongusu);
 }
 
-
 // --- 5. TIKLAMA / MODAL OLAYLARI ---
 let seciliTip = ""; let seciliIndex = null;
 
 document.addEventListener('click', (e) => {
     const t = e.target;
 
-    // Güç Butonları ve Umbau Lambası Olayları
     if (t.classList.contains('btn-on') || t.classList.contains('btn-off')) {
         const kutu = t.closest('.kutu');
         const aktifMi = t.classList.contains('btn-on');
@@ -218,13 +197,13 @@ document.addEventListener('click', (e) => {
         if (kutu.dataset.tip === "makina") makinalar[kutu.dataset.index].aktif = aktifMi;
         ekranlariCiz(); return;
     }
+    
     if (t.classList.contains('umbau-lambasi')) {
         const idx = t.closest('.kutu').dataset.index;
         makinalar[idx].umbau = !makinalar[idx].umbau;
         ekranlariCiz(); return;
     }
 
-    // Modal Açma (Eğer az önce sürükleme yapıldıysa AÇMA)
     const kutu = t.closest('.kutu');
     if (kutu && !t.matches('button') && !t.matches('.umbau-lambasi') && !suruklendiMi) {
         seciliTip = kutu.dataset.tip;
@@ -252,7 +231,6 @@ document.addEventListener('click', (e) => {
         document.getElementById('detay-modal').style.display = "block";
     }
 
-    // Modal Kapat / Kaydet
     if (t.id === "modal-kapat") document.getElementById('detay-modal').style.display = "none";
     
     if (t.id === "modal-kaydet") {
@@ -271,7 +249,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Başlat
 document.addEventListener("DOMContentLoaded", () => {
     ekranlariCiz();
     animasyonDongusu(); 
