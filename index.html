@@ -8,14 +8,25 @@
 </head>
 <body>
 
-    <header class="ust-bilgi">
-        <h1>BBP Kunststoffwerk - İnteraktif Akış Haritası</h1>
-        <p style="margin:5px 0 0 0; font-size:14px; color:#aaa;">Cihazları sürükleyin. Sarı noktalardan (çıkış), Yeşil noktalara (giriş) çizgi çekerek bağlayın.</p>
-    </header>
+    <!-- YÜZEN KONTROL PANELİ (Sol üstte sabit kalır) -->
+    <div id="kontrol-paneli">
+        <h2 style="margin:0 0 10px 0; font-size:16px; color:#3498db;">BBP Üretim Takip</h2>
+        <div class="zoom-araclari">
+            <button id="btn-zoom-out">-</button>
+            <span id="zoom-seviyesi">100%</span>
+            <button id="btn-zoom-in">+</button>
+            <button id="btn-zoom-reset">Sıfırla</button>
+        </div>
+        <p class="ipucu"><b>Çoklu Seçim:</b> CTRL + Tıkla<br><b>Ekranı Kaydır:</b> BOŞLUK + Sürükle</p>
+    </div>
 
+    <!-- EKRAN ÇERÇEVESİ (Kamera) -->
     <main id="fabrika-sahasi">
-        <canvas id="cizim-alani"></canvas>
-        <div id="cihazlar-kapsayici"></div>
+        <!-- İÇİNDEKİ DEV SAHNE (Zoom ve Kaydırma bu katmanda olur) -->
+        <div id="sahne">
+            <canvas id="cizim-alani" width="3000" height="3000"></canvas>
+            <div id="cihazlar-kapsayici"></div>
+        </div>
     </main>
 
     <!-- DETAY PENCERESİ (MODAL) -->
@@ -23,22 +34,17 @@
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
             <h3 id="modal-baslik">Detay Ayarları</h3>
-            
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
-            <!-- YENİ EKLENEN: Gelen Bağlantıları Gösterme Alanı -->
             <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
                 <h4 style="margin: 0 0 5px 0; color: #2c3e50;">📥 Gelen Malzemeler (Kaynaklar)</h4>
-                <ul id="gelen-listesi" style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">
-                    <!-- JavaScript burayı otomatik dolduracak -->
-                </ul>
+                <ul id="gelen-listesi" style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;"></ul>
             </div>
             
             <div id="modal-baglanti-alani">
                 <hr>
                 <h4 style="margin-bottom: 5px;">📤 Giden Bağlantılar (Hedefler)</h4>
-                <p style="font-size: 11px; color: #666; margin-top: 0;">Silmek veya elle eklemek için burayı kullanabilirsiniz.</p>
                 
                 <div id="silo-kanallari-inputlari">
                     <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
