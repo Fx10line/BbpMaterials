@@ -8,19 +8,26 @@
 </head>
 <body>
 
+    <!-- YÜZEN VE GENİŞLEYEN KONTROL PANELİ -->
     <div id="kontrol-paneli">
-        <h2 style="margin:0 0 10px 0; font-size:15px; color:#3498db; text-align:center;">BBP Üretim Takip</h2>
-        <div class="mod-secici">
-            <button id="btn-mod-edit" class="mod-aktif">👆 Düzenle</button>
-            <button id="btn-mod-pan">🖐 Gezin</button>
-        </div>
-        <div class="zoom-araclari">
-            <button id="btn-zoom-out">-</button>
-            <span id="zoom-seviyesi">100%</span>
-            <button id="btn-zoom-in">+</button>
+        <!-- Bu başlık her zaman görünür -->
+        <h2 id="panel-baslik">🛠️ BBP Paneli</h2>
+        
+        <!-- Üzerine gelince burası aşağı doğru açılır -->
+        <div id="panel-icerik">
+            <div class="mod-secici">
+                <button id="btn-mod-edit" class="mod-aktif">👆 Düzenle</button>
+                <button id="btn-mod-pan">🖐 Gezin</button>
+            </div>
+            <div class="zoom-araclari">
+                <button id="btn-zoom-out">-</button>
+                <span id="zoom-seviyesi">100%</span>
+                <button id="btn-zoom-in">+</button>
+            </div>
         </div>
     </div>
 
+    <!-- EKRAN ÇERÇEVESİ VE SAHNE -->
     <main id="fabrika-sahasi">
         <div id="sahne">
             <canvas id="cizim-alani" width="3000" height="3000"></canvas>
@@ -37,13 +44,11 @@
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
-            <!-- YENİ EKLENEN: SİLO ÖZEL BİLGİLERİ (Sadece siloya tıklanınca görünür) -->
             <div id="silo-ozel-bilgiler" style="display: none;">
                 <label>Artikel Kodu:</label>
                 <input type="text" id="modal-input-kod" class="modal-input">
-                
                 <label>Teknik Özellikler / Notlar:</label>
-                <textarea id="modal-input-teknik" class="modal-input" rows="3" placeholder="Bu malzemeye ait teknik değerleri buraya girebilirsiniz..."></textarea>
+                <textarea id="modal-input-teknik" class="modal-input" rows="3"></textarea>
             </div>
             
             <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px; margin-top:10px;">
@@ -54,7 +59,6 @@
             <div id="modal-baglanti-alani">
                 <hr>
                 <h4 style="margin-bottom: 5px; font-size:13px;">📤 Giden Bağlantılar</h4>
-                
                 <div id="silo-kanallari-inputlari">
                     <label>K.1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
                     <label>K.2:</label> <input type="text" id="modal-kanal-2" class="modal-input">
