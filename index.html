@@ -212,26 +212,25 @@
             font-size: 0.85em;
             font-weight: bold;
             margin: 2px 2px 2px 0;
-        }
-
-        .material-virgin {
             background: #e8f4f8;
             color: #0066cc;
+            word-break: break-word;
         }
 
-        .material-recycled {
-            background: #f0f8e8;
-            color: #336600;
+        .edit-btn {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 5px;
+            transition: all 0.3s ease;
         }
 
-        .material-color {
-            background: #f8f0e8;
-            color: #996633;
-        }
-
-        .material-gummy {
-            background: #fdf4e8;
-            color: #ff9900;
+        .edit-btn:hover {
+            background: #ffb300;
         }
 
         .connections {
@@ -595,15 +594,30 @@
         </div>
     </div>
 
-    <script>
-        // Materyal Tipleri
-        const MATERIALS = {
-            virgin: 'Orijinal Madde',
-            recycled: 'Geri Dönüştürülmüş',
-            color: 'Renk Ayarlaması',
-            gummy: 'Gummy Plastik'
-        };
+    <!-- MODAL: Silo Malzeme Düzenleme -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Silo Malzeme Düzenleme</div>
+            <div class="modal-body">
+                <div class="modal-form">
+                    <div class="form-group">
+                        <label>Silo Adı</label>
+                        <input type="text" id="modalSiloName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Malzeme Adı</label>
+                        <textarea id="modalMaterialName" placeholder="Malzeme adını girin"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeEditModal()">İptal</button>
+                <button class="modal-btn confirm" onclick="saveEditedMaterial()">Kaydet</button>
+            </div>
+        </div>
+    </div>
 
+    <script>
         // Veri Yapısı
         let system = {
             silos: [],
@@ -612,12 +626,27 @@
             positions: {}
         };
 
-        // Siloları Başlat (14 tane)
-        function initSilos() {
-            system.silos = Array.from({length: 14}, (_, i) => ({
+        let editingMaterialId = null;
+
+        // Siloları Dış Dosyadan Yükle
+        async function loadSilosFromConfig() {
+            try {
+                const response = await fetch('silos-config.json');
+                const data = await response.json();
+                return data.silos;
+            } catch (error) {
+                console.error('Silos config yüklenemedi, varsayılan veriler kullanılıyor:', error);
+                return generateDefaultSilos();
+            }
+        }
+
+        // Varsayılan Siloları Oluştur (fallback)
+        function generateDefaultSilos() {
+            return Array.from({length: 14}, (_, i) => ({
                 id: i + 1,
                 name: `Silo ${i + 1}`,
-                material: ['virgin', 'recycled', 'color', 'gummy'][i % 4],
+                material: `Malzeme ${i + 1}`,
+                group: i < 7 ? 1 : 2,
                 status: true
             }));
         }
@@ -628,7 +657,7 @@
                 id: i + 1,
                 name: `Fırın ${i + 1}`,
                 temperature: 60 + (i * 5),
-                materials: Array.from({length: 2}, () => ['virgin', 'recycled', 'color', 'gummy'][Math.floor(Math.random() * 4)]),
+                materials: ['Materyal A', 'Materyal B'],
                 status: true,
                 zone: i < 5 ? 1 : i < 11 ? 2 : 3
             }));
@@ -653,12 +682,15 @@
                 <div class="item ${silo.status ? 'active' : 'inactive'}" data-type="silo" data-id="${silo.id}">
                     <div class="item-header">
                         <div class="item-name">${silo.name}</div>
-                        <div class="item-status ${silo.status ? 'active-status' : 'inactive-status'}" onclick="toggleSilo(${silo.id})"></div>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <button class="edit-btn" onclick="openEditModal(${silo.id})">✏️ Düzenle</button>
+                            <div class="item-status ${silo.status ? 'active-status' : 'inactive-status'}" onclick="toggleSilo(${silo.id})"></div>
+                        </div>
                     </div>
                     <div class="item-info">
-                        <div><span class="label">Materyal:</span></div>
+                        <div><span class="label">Malzeme:</span></div>
                         <div>
-                            <span class="material-badge material-${silo.material}">${MATERIALS[silo.material]}</span>
+                            <span class="material-badge">${silo.material}</span>
                         </div>
                     </div>
                 </div>
@@ -682,7 +714,7 @@
                             <div><span class="label">Sıcaklık:</span> ${dryer.temperature}°C</div>
                             <div><span class="label">Materyaller:</span></div>
                             <div>
-                                ${dryer.materials.map(m => `<span class="material-badge material-${m}">${MATERIALS[m]}</span>`).join('')}
+                                ${dryer.materials.map(m => `<span class="material-badge">${m}</span>`).join('')}
                             </div>
                         </div>
                     </div>
@@ -720,6 +752,37 @@
                     <input type="number" id="y-${machine.id}" value="${Math.round(machine.y)}" min="0" placeholder="Y">
                 </div>
             `).join('');
+        }
+
+        // Silo Malzeme Düzenleme Modalını Aç
+        function openEditModal(siloId) {
+            const silo = system.silos.find(s => s.id === siloId);
+            if (silo) {
+                editingMaterialId = siloId;
+                document.getElementById('modalSiloName').value = silo.name;
+                document.getElementById('modalMaterialName').value = silo.material;
+                document.getElementById('editModal').style.display = 'block';
+            }
+        }
+
+        // Modal Kapat
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            editingMaterialId = null;
+        }
+
+        // Düzenlenen Malzemeyi Kaydet
+        function saveEditedMaterial() {
+            if (editingMaterialId) {
+                const silo = system.silos.find(s => s.id === editingMaterialId);
+                if (silo) {
+                    silo.material = document.getElementById('modalMaterialName').value;
+                    renderSilos();
+                    closeEditModal();
+                    // Opsiyonel: localStorage'a da kaydet
+                    saveConfig();
+                }
+            }
         }
 
         // Silo Durumunu Değiştir
@@ -814,7 +877,6 @@
             ctx.fillRect(0, 0, width, height);
 
             // Siloları çiz
-            ctx.fillStyle = '#ff6b6b';
             system.silos.forEach((silo, idx) => {
                 const x = 30 + (idx % 7) * 50;
                 const y = 30 + Math.floor(idx / 7) * 50;
@@ -887,14 +949,23 @@
             drawCanvas();
         }
 
+        // Modal Dışına Tıklandığında Kapat
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
         // Sayfa Yüklendiğinde
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             // Kaydedilmiş yapılandırmayı yükle
             const saved = localStorage.getItem('productionSystem');
             if (saved) {
                 system = JSON.parse(saved);
             } else {
-                initSilos();
+                // Siloları dış dosyadan yükle
+                system.silos = await loadSilosFromConfig();
                 initDryers();
                 initMachines();
             }
