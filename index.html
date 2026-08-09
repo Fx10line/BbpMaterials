@@ -3,76 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Fabrika Malzeme Akış ve Takip Sistemi - BBP Kunststoffwerk Üretim Takip Panosu">
-    <title>Fabrika Malzeme Akış ve Takip Sistemi</title>
-    <!-- CSS dosyamızı sayfamıza bağlıyoruz -->
+    <meta name="description" content="Fabrika Malzeme Akış ve Takip Sistemi">
+    <title>BBP Kunststoffwerk - Üretim Takip</title>
+    <!-- CSS Dosyası Bağlantısı -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Sayfanın en üstündeki başlık çubuğu -->
+    <!-- Üst Başlık -->
     <header class="ust-bilgi">
         <h1>BBP Kunststoffwerk - Üretim Takip Panosu</h1>
     </header>
 
-    <!-- 3 ana sütunu tutacak olan dev çerçeve -->
+    <!-- Ana Çerçeve (3 Sütunlu Grid) -->
     <main class="pano-kapsayici">
 
-        <!-- 1. SÜTUN: SİLOLAR (14 Adet buraya gelecek) -->
+        <!-- 1. SÜTUN: SİLOLAR (JavaScript ile 14 Adet Doldurulacak) -->
         <section class="sutun" id="silolar-sutunu">
             <h2>SİLOLAR</h2>
             <p class="aciklama">Hammadde Depolama</p>
-            
-            <!-- Örnek bir Silo Kutusu (Şimdilik tasarımı görmek için 1 tane koyuyoruz) -->
-            <div class="silo-kutusu" role="region" aria-label="Silo 1">
-                <div class="kutu-baslik">Silo 1</div>
-                <div class="kutu-bilgi">Materyal: Polipropilen (PP)</div>
-                <div class="guc-dugmeleri">
-                    <button class="btn-on">ON</button>
-                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
-                </div>
-            </div>
+            <div id="silo-listesi"></div> <!-- Silolar buraya çizilecek -->
         </section>
 
-        <!-- 2. SÜTUN: FIRINLAR (16 Adet buraya gelecek) -->
+        <!-- 2. SÜTUN: FIRINLAR (JavaScript ile 16 Adet Doldurulacak) -->
         <section class="sutun" id="firinlar-sutunu">
             <h2>KURUTMA FIRINLARI</h2>
             <p class="aciklama">Nem ve Sıcaklık Kontrolü</p>
-
-            <!-- Örnek bir Fırın Kutusu -->
-            <div class="firin-kutusu" role="region" aria-label="Fırın 1">
-                <div class="kutu-baslik">Fırın 1</div>
-                <div class="kutu-bilgi">Sıcaklık: 80°C</div>
-                <!-- Fırın için ON/OFF düğmeleri -->
-                <div class="guc-dugmeleri">
-                    <button class="btn-on">ON</button>
-                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
-                </div>
-            </div>
+            <div id="firin-listesi"></div> <!-- Fırınlar buraya çizilecek -->
         </section>
 
-        <!-- 3. SÜTUN: ENJEKSİYON MAKİNALARI (19 Adet buraya gelecek) -->
+        <!-- 3. SÜTUN: MAKİNALAR (JavaScript ile 19 Adet Doldurulacak) -->
         <section class="sutun" id="makinalar-sutunu">
             <h2>ENJEKSİYON MAKİNALARI</h2>
             <p class="aciklama">Üretim Hattı</p>
-
-            <!-- Örnek bir Makina Kutusu (Umbau lambası ile) -->
-            <div class="makina-kutusu" role="region" aria-label="Makina 1">
-                <!-- Umbau lambası: "umbau-aktif" sınıfı silinirse lamba söner -->
-                <div class="umbau-lambasi umbau-aktif" title="Kalıp Değişimi (Umbau) Yapılıyor" role="img" aria-label="Umbau lambası"></div>
-                <div class="kutu-baslik">Makina 1</div>
-                <div class="kutu-bilgi">Ürün: Kapak V2</div>
-                <!-- Makina için ON/OFF düğmeleri -->
-                <div class="guc-dugmeleri">
-                    <button class="btn-on">ON</button>
-                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
-                </div>
-            </div>
+            <div id="makina-listesi"></div> <!-- Makinalar buraya çizilecek -->
         </section>
 
     </main>
 
-    <!-- JS dosyamızı ekliyoruz -->
+    <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
+    <!-- Bir siloya tıklayınca bu pencere görünür hale gelir -->
+    <div id="detay-modal" class="modal" style="display: none;">
+        <div class="modal-icerik">
+            <span class="kapat-btn" id="modal-kapat">&times;</span>
+            <h3 id="modal-baslik">Detay Ayarları</h3>
+            
+            <!-- Güncellenecek Veri Alanı -->
+            <label id="modal-etiket">Materyal/Bilgi:</label>
+            <input type="text" id="modal-input-veri" class="modal-input">
+            
+            <!-- Silolar için 4 Kanal Bilgisi (Sadece silolarda görünür) -->
+            <div id="modal-kanallar-alani" style="display: none;">
+                <h4>Çıkış Kanalları</h4>
+                <label>Kanal 1 (Hedef):</label> <input type="text" id="modal-kanal-1" class="modal-input">
+                <label>Kanal 2 (Hedef):</label> <input type="text" id="modal-kanal-2" class="modal-input">
+                <label>Kanal 3 (Hedef):</label> <input type="text" id="modal-kanal-3" class="modal-input">
+                <label>Kanal 4 (Hedef):</label> <input type="text" id="modal-kanal-4" class="modal-input">
+            </div>
+
+            <button id="modal-kaydet" class="kaydet-btn">Kaydet ve Güncelle</button>
+        </div>
+    </div>
+
+    <!-- JavaScript Dosyası Bağlantısı -->
     <script src="js/script.js"></script>
 </body>
 </html>
