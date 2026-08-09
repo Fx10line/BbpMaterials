@@ -633,9 +633,10 @@
             try {
                 const response = await fetch('silos-config.json');
                 const data = await response.json();
+                console.log('Silos config başarıyla yüklendi:', data.silos);
                 return data.silos;
             } catch (error) {
-                console.error('Silos config yüklenemedi, varsayılan veriler kullanılıyor:', error);
+                console.error('Silos config yüklenemedi:', error);
                 return generateDefaultSilos();
             }
         }
@@ -779,7 +780,6 @@
                     silo.material = document.getElementById('modalMaterialName').value;
                     renderSilos();
                     closeEditModal();
-                    // Opsiyonel: localStorage'a da kaydet
                     saveConfig();
                 }
             }
@@ -842,7 +842,6 @@
 
         // Yapılandırmayı Kaydet
         function saveConfig() {
-            // Konumları güncelle
             system.machines.forEach(machine => {
                 machine.x = parseFloat(document.getElementById(`x-${machine.id}`).value) || machine.x;
                 machine.y = parseFloat(document.getElementById(`y-${machine.id}`).value) || machine.y;
@@ -872,11 +871,9 @@
             canvas.width = width;
             canvas.height = height;
 
-            // Arka plan
             ctx.fillStyle = '#f5f5f5';
             ctx.fillRect(0, 0, width, height);
 
-            // Siloları çiz
             system.silos.forEach((silo, idx) => {
                 const x = 30 + (idx % 7) * 50;
                 const y = 30 + Math.floor(idx / 7) * 50;
@@ -888,7 +885,6 @@
                 ctx.fillText(`S${silo.id}`, x + 20, y + 25);
             });
 
-            // Fırınları çiz
             const dryerZoneColors = ['#4ecdc4', '#45b7d1', '#96ceb4'];
             let dryerY = 150;
             system.dryers.forEach((dryer, idx) => {
@@ -904,7 +900,6 @@
                 ctx.fillText(`D${dryer.id}`, x + 25, y + 25);
             });
 
-            // Makinaları çiz
             system.machines.forEach(machine => {
                 const radius = 8;
                 ctx.beginPath();
@@ -915,14 +910,12 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // İsim
                 ctx.fillStyle = '#333';
                 ctx.font = 'bold 10px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(`M${machine.id}`, machine.x + 600, machine.y - 15);
             });
 
-            // Bağlantı çizgileri
             ctx.strokeStyle = '#999';
             ctx.lineWidth = 1;
             ctx.setLineDash([5, 5]);
@@ -957,19 +950,20 @@
             }
         }
 
-        // Sayfa Yüklendiğinde
+        // Sayfa Yüklendiğinde - FİKS YAPILDI!
         window.addEventListener('load', async () => {
-            // Kaydedilmiş yapılandırmayı yükle
-            const saved = localStorage.getItem('productionSystem');
-            if (saved) {
-                system = JSON.parse(saved);
-            } else {
-                // Siloları dış dosyadan yükle
-                system.silos = await loadSilosFromConfig();
-                initDryers();
-                initMachines();
-            }
+            console.log('Sayfa yükleniyor...');
+            
+            // ✅ HER ZAMAN localStorage'ı temizle ve dosyadan yükle
+            localStorage.removeItem('productionSystem');
+            
+            // Siloları dış dosyadan yükle
+            system.silos = await loadSilosFromConfig();
+            initDryers();
+            initMachines();
+            
             render();
+            console.log('Sistem başlatıldı. Siloları yüklenen veri:', system.silos);
         });
 
         // Canvas'ı Sürükle
