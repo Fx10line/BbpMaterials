@@ -1,302 +1,309 @@
 // --- 1. VERİ TABANI ---
 let silolar = [];
 for (let i = 1; i <= 14; i++) {
-    silolar.push({
-        id_str: `silo_${i}`, isim: `Silo ${i}`, materyal: "PP", aktif: true,
-        kanallar: (i === 1) ? ["firin_1", "makina_2", "Boş", "Boş"] : ["Boş", "Boş", "Boş", "Boş"],
-        x: 50, y: (i-1) * 160 + 20
-    });
+    silolar.push({ id_str: `silo_${i}`, isim: `Silo ${i}`, materyal: "PP", aktif: true, kanallar: (i === 1) ? ["firin_1", "makina_2", "Boş", "Boş"] : ["Boş", "Boş", "Boş", "Boş"], x: 100, y: (i-1) * 160 + 50 });
 }
 let firinlar = [];
 for (let i = 1; i <= 16; i++) {
-    firinlar.push({
-        id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true,
-        hedef: (i === 1) ? "makina_1" : "Boş",
-        x: 450, y: (i-1) * 140 + 20
-    });
+    firinlar.push({ id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true, hedef: (i === 1) ? "makina_1" : "Boş", x: 600, y: (i-1) * 140 + 50 });
 }
 let makinalar = [];
 for (let i = 1; i <= 19; i++) {
-    makinalar.push({
-        id_str: `makina_${i}`, isim: `Makina ${i}`, urun: "Kapak V2", aktif: true, umbau: false,
-        x: 900, y: (i-1) * 120 + 20
-    });
+    makinalar.push({ id_str: `makina_${i}`, isim: `Makina ${i}`, urun: "Kapak V2", aktif: true, umbau: false, x: 1100, y: (i-1) * 120 + 50 });
 }
 
-// --- 2. HTML OLUŞTURMA VE DÜĞÜMLERİ (NODES) EKLEME ---
+// --- 2. HTML OLUŞTURMA VE DÜĞÜMLER ---
 function ekranlariCiz() {
     const kapsayici = document.getElementById('cihazlar-kapsayici');
-    kapsayici.innerHTML = ""; 
-
-    silolar.forEach((s, i) => {
-        kapsayici.innerHTML += `
-            <div class="kutu" id="${s.id_str}" data-tip="silo" data-index="${i}" style="left: ${s.x}px; top: ${s.y}px;">
-                <div class="silo-nodes">
-                    <div class="node-out" data-kanal="0" title="Kanal 1 Çıkışı"></div>
-                    <div class="node-out" data-kanal="1" title="Kanal 2 Çıkışı"></div>
-                    <div class="node-out" data-kanal="2" title="Kanal 3 Çıkışı"></div>
-                    <div class="node-out" data-kanal="3" title="Kanal 4 Çıkışı"></div>
-                </div>
-                <div class="kutu-ikon">🛢️</div>
-                <div class="kutu-baslik">${s.isim}</div>
-                <div class="kutu-bilgi">Mat: ${s.materyal}</div>
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${s.aktif ? 'aktif-buton':''}">ON</button>
-                    <button class="btn-off ${!s.aktif ? 'aktif-buton':''}">OFF</button>
-                </div>
-            </div>`;
-    });
-
-    firinlar.forEach((f, i) => {
-        kapsayici.innerHTML += `
-            <div class="kutu" id="${f.id_str}" data-tip="firin" data-index="${i}" style="left: ${f.x}px; top: ${f.y}px;">
-                <div class="node-in" title="Malzeme Girişi"></div>
-                <div class="node-out tekli" data-kanal="0" title="Malzeme Çıkışı"></div>
-                <div class="kutu-ikon">🔥</div>
-                <div class="kutu-baslik">${f.isim}</div>
-                <div class="kutu-bilgi">Isı: ${f.sicaklik}</div>
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${f.aktif ? 'aktif-buton':''}">ON</button>
-                    <button class="btn-off ${!f.aktif ? 'aktif-buton':''}">OFF</button>
-                </div>
-            </div>`;
-    });
-
-    makinalar.forEach((m, i) => {
-        kapsayici.innerHTML += `
-            <div class="kutu" id="${m.id_str}" data-tip="makina" data-index="${i}" style="left: ${m.x}px; top: ${m.y}px;">
-                <div class="node-in" title="Malzeme Girişi"></div>
-                <div class="umbau-lambasi ${m.umbau ? 'umbau-aktif':''}"></div>
-                <div class="kutu-ikon">⚙️</div>
-                <div class="kutu-baslik">${m.isim}</div>
-                <div class="kutu-bilgi">Ürün: ${m.urun}</div>
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${m.aktif ? 'aktif-buton':''}">ON</button>
-                    <button class="btn-off ${!m.aktif ? 'aktif-buton':''}">OFF</button>
-                </div>
-            </div>`;
-    });
+    
+    // Kutuları sadece verideki pozisyonlarına taşır (sıfırdan yaratmaz, böylece seçimler kaybolmaz)
+    // Eğer ekran ilk kez çiziliyorsa HTML'i oluşturur
+    if(kapsayici.innerHTML.trim() === "") {
+        let html = "";
+        silolar.forEach((s, i) => { html += olusturHTML(s, "silo", i, "🛢️"); });
+        firinlar.forEach((f, i) => { html += olusturHTML(f, "firin", i, "🔥"); });
+        makinalar.forEach((m, i) => { html += olusturHTML(m, "makina", i, "⚙️"); });
+        kapsayici.innerHTML = html;
+    } else {
+        // Zaten çiziliyse sadece yerini, rengini ve bilgilerini güncelle (Çoklu seçim efekti kaybolmasın diye)
+        silolar.forEach(s => guncelleHTML(s));
+        firinlar.forEach(f => guncelleHTML(f));
+        makinalar.forEach(m => guncelleHTML(m));
+    }
 }
 
-// --- 3. İZLENEBİLİRLİK (TRACEABILITY) MOTORU ---
-// Bir cihaza kimlerden malzeme geldiğini bulur
+function olusturHTML(veri, tip, index, ikon) {
+    let nodeSol = (tip === "firin" || tip === "makina") ? `<div class="node-in" title="Malzeme Girişi"></div>` : "";
+    let nodeSag = "";
+    if (tip === "silo") {
+        nodeSag = `<div class="silo-nodes">
+            <div class="node-out" data-kanal="0"></div><div class="node-out" data-kanal="1"></div>
+            <div class="node-out" data-kanal="2"></div><div class="node-out" data-kanal="3"></div></div>`;
+    } else if (tip === "firin") {
+        nodeSag = `<div class="node-out tekli" data-kanal="0"></div>`;
+    }
+
+    let lamba = tip === "makina" ? `<div class="umbau-lambasi ${veri.umbau ? 'umbau-aktif':''}"></div>` : "";
+    let bilgi = tip === "silo" ? `Mat: ${veri.materyal}` : (tip === "firin" ? `Isı: ${veri.sicaklik}` : `Ürün: ${veri.urun}`);
+
+    return `<div class="kutu" id="${veri.id_str}" data-tip="${tip}" data-index="${index}" style="left: ${veri.x}px; top: ${veri.y}px;">
+                ${nodeSol} ${nodeSag} ${lamba}
+                <div class="kutu-ikon">${ikon}</div>
+                <div class="kutu-baslik">${veri.isim}</div>
+                <div class="kutu-bilgi">${bilgi}</div>
+                <div class="guc-dugmeleri">
+                    <button class="btn-on ${veri.aktif ? 'aktif-buton':''}">ON</button>
+                    <button class="btn-off ${!veri.aktif ? 'aktif-buton':''}">OFF</button>
+                </div>
+            </div>`;
+}
+
+function guncelleHTML(veri) {
+    let kutu = document.getElementById(veri.id_str);
+    if(!kutu) return;
+    kutu.style.left = veri.x + 'px';
+    kutu.style.top = veri.y + 'px';
+    // Durum güncellemelerini de buraya ekleyebilirsin
+}
+
+
+// --- 3. İZLENEBİLİRLİK MOTORU ---
 function gelenBaglantilariBul(hedefIdStr) {
     let gelenler = [];
-    
-    // Silolara bak
-    silolar.forEach(s => {
-        s.kanallar.forEach(k => {
-            if(k && k.includes(hedefIdStr)) gelenler.push(`<b>${s.isim}</b>'dan (Malzeme: ${s.materyal})`);
-        });
-    });
-    
-    // Fırınlara bak
-    firinlar.forEach(f => {
-        if(f.hedef && f.hedef.includes(hedefIdStr)) gelenler.push(`<b>${f.isim}</b>'dan (Sıcaklık: ${f.sicaklik})`);
-    });
-    
+    silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(hedefIdStr)) gelenler.push(`<b>${s.isim}</b>'dan (Mat: ${s.materyal})`); }); });
+    firinlar.forEach(f => { if(f.hedef && f.hedef.includes(hedefIdStr)) gelenler.push(`<b>${f.isim}</b>'dan (Isı: ${f.sicaklik})`); });
     return gelenler;
 }
-
-// Yeni kablo bağlantısını hafızaya kaydeder
 function baglantiEkle(kaynakTip, kaynakIndex, kanalIndex, hedefIdStr) {
     if (kaynakTip === "silo") {
-        let mevcut = silolar[kaynakIndex].kanallar[kanalIndex];
-        if (mevcut === "Boş" || mevcut === "") silolar[kaynakIndex].kanallar[kanalIndex] = hedefIdStr;
-        else if (!mevcut.includes(hedefIdStr)) silolar[kaynakIndex].kanallar[kanalIndex] += `, ${hedefIdStr}`;
+        let m = silolar[kaynakIndex].kanallar[kanalIndex];
+        silolar[kaynakIndex].kanallar[kanalIndex] = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
     } else if (kaynakTip === "firin") {
-        let mevcut = firinlar[kaynakIndex].hedef;
-        if (mevcut === "Boş" || mevcut === "") firinlar[kaynakIndex].hedef = hedefIdStr;
-        else if (!mevcut.includes(hedefIdStr)) firinlar[kaynakIndex].hedef += `, ${hedefIdStr}`;
+        let m = firinlar[kaynakIndex].hedef;
+        firinlar[kaynakIndex].hedef = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
     }
 }
 
 
-// --- 4. SÜRÜKLE & BIRAK VE KABLO ÇEKME ---
-let suruklenenKutu = null; let offset = { x: 0, y: 0 }; let suruklendiMi = false;
-let kabloCekiliyor = false; let kabloBaslangic = null; let fareX = 0; let fareY = 0;
+// --- 4. ZOOM, PAN VE ÇOKLU SÜRÜKLEME ---
+const sahne = document.getElementById('sahne');
+let scale = 1; let panX = 0; let panY = 0;
+let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 
+let seciliKutular = new Set(); // Çoklu seçim için kutu ID'lerini tutar
+let suruklenenKutular = []; // Sürüklenen kutuların referanslarını tutar
+let sonFareX = 0; let sonFareY = 0; let kutuSurukleniyor = false;
+
+let kabloCekiliyor = false; let kabloBaslangic = null; let yerelFareX = 0; let yerelFareY = 0;
+
+// ZOOM (Fare Tekerleği)
+document.getElementById('fabrika-sahasi').addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomMiktari = e.deltaY < 0 ? 1.1 : 0.9;
+    scale = Math.min(Math.max(scale * zoomMiktari, 0.2), 3); // %20 ile %300 arası
+    sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    document.getElementById('zoom-seviyesi').innerText = Math.round(scale * 100) + '%';
+});
+
+// ZOOM (Butonlar)
+document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale * 1.2, 3); guncelleSahne(); };
+document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(scale * 0.8, 0.2); guncelleSahne(); };
+document.getElementById('btn-zoom-reset').onclick = () => { scale = 1; panX = 0; panY = 0; guncelleSahne(); };
+function guncelleSahne() { 
+    sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; 
+    document.getElementById('zoom-seviyesi').innerText = Math.round(scale * 100) + '%';
+}
+
+// MOUSE İŞLEMLERİ (KAYDIRMA, SEÇİM, SÜRÜKLEME, KABLO)
 document.addEventListener('mousedown', (e) => {
-    const t = e.target;
-    
-    // EĞER ÇIKIŞ NOKTASINA (SARI) TIKLANDIYSA KABLO ÇEKMEYİ BAŞLAT
-    if (t.classList.contains('node-out')) {
-        kabloCekiliyor = true;
-        kabloBaslangic = t;
-        return; // Kutuyu sürüklemeye geçmesini engelle
+    // 1. BOŞLUK TUŞU İLE EKRAN KAYDIRMA (PAN)
+    if (e.code === "Space" || document.body.style.cursor === "grab") {
+        isPanning = true; baslangicPanX = e.clientX - panX; baslangicPanY = e.clientY - panY;
+        document.getElementById('fabrika-sahasi').style.cursor = "grabbing";
+        return;
     }
 
-    // KUTU SÜRÜKLEME
+    const t = e.target;
+    
+    // 2. KABLO ÇEKME
+    if (t.classList.contains('node-out')) {
+        kabloCekiliyor = true; kabloBaslangic = t; return;
+    }
+
+    // 3. KUTU SEÇİMİ VE SÜRÜKLEME
     const kutu = t.closest('.kutu');
     if (kutu && !t.closest('button') && !t.classList.contains('umbau-lambasi') && !t.classList.contains('node-in')) {
-        suruklenenKutu = kutu; suruklendiMi = false;
-        const rect = kutu.getBoundingClientRect();
-        offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top;
-        kutu.style.zIndex = 1000; 
+        // Eğer CTRL veya Shift'e basılıysa, çoklu seçime ekle/çıkar
+        if (e.ctrlKey || e.shiftKey) {
+            if (seciliKutular.has(kutu.id)) { seciliKutular.delete(kutu.id); kutu.classList.remove('secili'); } 
+            else { seciliKutular.add(kutu.id); kutu.classList.add('secili'); }
+        } 
+        else {
+            // CTRL'ye basılmadıysa ve tıklanan kutu zaten seçili değilse, diğer seçimleri iptal et
+            if (!seciliKutular.has(kutu.id)) {
+                document.querySelectorAll('.kutu.secili').forEach(k => k.classList.remove('secili'));
+                seciliKutular.clear();
+                seciliKutular.add(kutu.id); kutu.classList.add('secili');
+            }
+        }
+
+        kutuSurukleniyor = true;
+        sonFareX = e.clientX; sonFareY = e.clientY;
+        suruklenenKutular = Array.from(seciliKutular).map(id => document.getElementById(id));
+    } else if (!kutu && !t.closest('#kontrol-paneli')) {
+        // Boşluğa tıklandıysa tüm seçimleri kaldır
+        document.querySelectorAll('.kutu.secili').forEach(k => k.classList.remove('secili'));
+        seciliKutular.clear();
     }
 });
 
 document.addEventListener('mousemove', (e) => {
-    const sahaRect = document.getElementById('fabrika-sahasi').getBoundingClientRect();
-    fareX = e.clientX - sahaRect.left;
-    fareY = e.clientY - sahaRect.top;
+    // Zoom seviyesine göre farenin sahnedeki gerçek konumunu bul
+    const rect = sahne.getBoundingClientRect();
+    yerelFareX = (e.clientX - rect.left) / scale;
+    yerelFareY = (e.clientY - rect.top) / scale;
 
-    if (suruklenenKutu) {
-        suruklendiMi = true; 
-        suruklenenKutu.style.left = (fareX - offset.x) + 'px';
-        suruklenenKutu.style.top = (fareY - offset.y) + 'px';
+    if (isPanning) {
+        panX = e.clientX - baslangicPanX; panY = e.clientY - baslangicPanY;
+        sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+    else if (kutuSurukleniyor) {
+        // Fare ne kadar hareket ettiyse (Zoom oranına göre bölüyoruz ki kutu hızlı kaçmasın)
+        let deltaX = (e.clientX - sonFareX) / scale;
+        let deltaY = (e.clientY - sonFareY) / scale;
+
+        suruklenenKutular.forEach(k => {
+            let yeniX = parseFloat(k.style.left || 0) + deltaX;
+            let yeniY = parseFloat(k.style.top || 0) + deltaY;
+            k.style.left = yeniX + 'px'; k.style.top = yeniY + 'px';
+        });
+
+        sonFareX = e.clientX; sonFareY = e.clientY;
     }
 });
 
 document.addEventListener('mouseup', (e) => {
-    // EĞER KABLO ÇEKİLİYORSA VE BİR GİRİŞE (YEŞİL) BIRAKILDIYSA
+    if (isPanning) {
+        isPanning = false; document.getElementById('fabrika-sahasi').style.cursor = "default";
+    }
+    
     if (kabloCekiliyor) {
         let hedefNokta = e.target;
         if (hedefNokta.classList.contains('node-in')) {
             let kaynakKutu = kabloBaslangic.closest('.kutu');
             let hedefKutu = hedefNokta.closest('.kutu');
             let kanalIndex = kabloBaslangic.dataset.kanal || 0;
-            
-            // Aynı kutuya bağlanmayı engelle
-            if (kaynakKutu.id !== hedefKutu.id) {
-                baglantiEkle(kaynakKutu.dataset.tip, kaynakKutu.dataset.index, kanalIndex, hedefKutu.id);
-            }
+            if (kaynakKutu.id !== hedefKutu.id) baglantiEkle(kaynakKutu.dataset.tip, kaynakKutu.dataset.index, kanalIndex, hedefKutu.id);
         }
         kabloCekiliyor = false; kabloBaslangic = null;
     }
 
-    if (suruklenenKutu) {
-        suruklenenKutu.style.zIndex = "";
-        const yeniX = parseInt(suruklenenKutu.style.left); const yeniY = parseInt(suruklenenKutu.style.top);
-        const idx = parseInt(suruklenenKutu.dataset.index);
-
-        if (suruklenenKutu.dataset.tip === "silo") { silolar[idx].x = yeniX; silolar[idx].y = yeniY; } 
-        else if (suruklenenKutu.dataset.tip === "firin") { firinlar[idx].x = yeniX; firinlar[idx].y = yeniY; } 
-        else { makinalar[idx].x = yeniX; makinalar[idx].y = yeniY; }
-        
-        suruklenenKutu = null;
-        setTimeout(() => { suruklendiMi = false; }, 50); 
+    if (kutuSurukleniyor) {
+        // Yeni pozisyonları veri dizisine kaydet
+        suruklenenKutular.forEach(k => {
+            const yX = parseInt(k.style.left); const yY = parseInt(k.style.top);
+            const idx = parseInt(k.dataset.index);
+            if (k.dataset.tip === "silo") { silolar[idx].x = yX; silolar[idx].y = yY; } 
+            else if (k.dataset.tip === "firin") { firinlar[idx].x = yX; firinlar[idx].y = yY; } 
+            else { makinalar[idx].x = yX; makinalar[idx].y = yY; }
+        });
+        kutuSurukleniyor = false; suruklenenKutular = [];
     }
 });
 
-// --- 5. CANVAS ÇİZİMİ (DURAĞAN VE HAREKETLİ) ---
+// Boşluk tuşu basılıyken pan moduna geç
+window.addEventListener('keydown', (e) => { if (e.code === "Space" && e.target.tagName !== "INPUT") document.body.style.cursor = "grab"; });
+window.addEventListener('keyup', (e) => { if (e.code === "Space") document.body.style.cursor = "default"; });
+
+
+// --- 5. CANVAS (YENİ LOKASYON MANTIĞI) ---
 const canvas = document.getElementById('cizim-alani');
 const ctx = canvas.getContext('2d');
 let dashOffset = 0;
 
 function akisCizgileriniGuncelle() {
-    const saha = document.getElementById('fabrika-sahasi');
-    if(canvas.width !== saha.offsetWidth) canvas.width = saha.offsetWidth;
-    if(canvas.height !== saha.offsetHeight) canvas.height = saha.offsetHeight;
-    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Bağlı olan cihazları çiz
     silolar.forEach(silo => {
-        silo.kanallar.forEach(kanalVerisi => {
-            if (kanalVerisi && kanalVerisi !== "Boş") {
-                kanalVerisi.split(',').forEach(hedefId => {
-                    cizgiCiz(silo.id_str, hedefId.trim(), "#3498db", silo.aktif);
-                });
+        silo.kanallar.forEach(kanal => {
+            if (kanal && kanal !== "Boş") {
+                kanal.split(',').forEach(hedefId => cizgiCiz(silo.id_str, hedefId.trim(), "#3498db", silo.aktif));
             }
         });
     });
-
     firinlar.forEach(firin => {
         if (firin.hedef && firin.hedef !== "Boş") {
-            firin.hedef.split(',').forEach(hedefId => {
-                cizgiCiz(firin.id_str, hedefId.trim(), "#e67e22", firin.aktif);
-            });
+            firin.hedef.split(',').forEach(hedefId => cizgiCiz(firin.id_str, hedefId.trim(), "#e67e22", firin.aktif));
         }
     });
 
-    // Eğer fareyle yeni bir kablo çekiliyorsa geçici çizgi çiz (Beyaz renk)
     if (kabloCekiliyor && kabloBaslangic) {
-        const rect = kabloBaslangic.getBoundingClientRect();
-        const sahaRect = saha.getBoundingClientRect();
-        const startX = rect.left - sahaRect.left + (rect.width/2);
-        const startY = rect.top - sahaRect.top + (rect.height/2);
+        const kaynak = kabloBaslangic.closest('.kutu');
+        const startX = kaynak.offsetLeft + kaynak.offsetWidth;
+        const startY = kaynak.offsetTop + kabloBaslangic.offsetTop + (kabloBaslangic.offsetHeight/2);
         
-        ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(fareX, fareY);
+        ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(yerelFareX, yerelFareY);
         ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); ctx.stroke();
     }
 }
 
 function cizgiCiz(kaynakId, hedefId, aktifRenk, kaynakAktif) {
-    const kaynak = document.getElementById(kaynakId);
-    const hedef = document.getElementById(hedefId);
+    const kaynak = document.getElementById(kaynakId); const hedef = document.getElementById(hedefId);
     if (!kaynak || !hedef) return;
 
-    // Hedef cihazın çalışıp çalışmadığına bak
     let hedefAktif = true;
     if (hedef.dataset.tip === "firin") hedefAktif = firinlar[hedef.dataset.index].aktif;
     else if (hedef.dataset.tip === "makina") hedefAktif = makinalar[hedef.dataset.index].aktif;
 
-    const startX = parseInt(kaynak.style.left) + kaynak.offsetWidth;
-    const startY = parseInt(kaynak.style.top) + (kaynak.offsetHeight / 2);
-    const endX = parseInt(hedef.style.left);
-    const endY = parseInt(hedef.style.top) + (hedef.offsetHeight / 2);
+    // Kutu offset'leri direkt "#sahne" içindeki yerlerini verir. (Ekran koordinatı değil!)
+    const startX = kaynak.offsetLeft + kaynak.offsetWidth;
+    const startY = kaynak.offsetTop + (kaynak.offsetHeight / 2);
+    const endX = hedef.offsetLeft;
+    const endY = hedef.offsetTop + (hedef.offsetHeight / 2);
 
     ctx.beginPath(); ctx.moveTo(startX, startY);
-    const ortaX = (startX + endX) / 2;
-    ctx.bezierCurveTo(ortaX, startY, ortaX, endY, endX, endY);
-
-    // KONTROL: Eğer iki taraftan biri kapalıysa çizgiyi GRİ ve HAREKETSİZ yap
+    ctx.bezierCurveTo((startX + endX)/2, startY, (startX + endX)/2, endY, endX, endY);
+    
     const baglantiAktif = kaynakAktif && hedefAktif;
-    
-    ctx.strokeStyle = baglantiAktif ? aktifRenk : "rgba(120, 120, 120, 0.4)"; // Pasifse soluk gri
-    ctx.lineWidth = baglantiAktif ? 4 : 2; // Pasifse çizgiyi incelt
-    
-    if (baglantiAktif) {
-        ctx.setLineDash([10, 10]);
-        ctx.lineDashOffset = -dashOffset; 
-    } else {
-        ctx.setLineDash([]); // Kesik değil, düz durağan çizgi
-    }
-    
+    ctx.strokeStyle = baglantiAktif ? aktifRenk : "rgba(100, 100, 100, 0.4)";
+    ctx.lineWidth = baglantiAktif ? 4 : 2;
+    if (baglantiAktif) { ctx.setLineDash([10, 10]); ctx.lineDashOffset = -dashOffset; } else ctx.setLineDash([]);
     ctx.stroke();
 }
 
-function animasyonDongusu() {
-    dashOffset += 1.5; 
-    akisCizgileriniGuncelle();
-    requestAnimationFrame(animasyonDongusu);
-}
+function animasyonDongusu() { dashOffset += 1.5; akisCizgileriniGuncelle(); requestAnimationFrame(animasyonDongusu); }
+
 
 // --- 6. TIKLAMA / MODAL OLAYLARI ---
 let seciliTip = ""; let seciliIndex = null;
-
 document.addEventListener('click', (e) => {
     const t = e.target;
-    if (t.classList.contains('node-out') || t.classList.contains('node-in')) return; // Düğümlere tıklamayı es geç
+    if (t.classList.contains('node-out') || t.classList.contains('node-in')) return; 
 
     if (t.classList.contains('btn-on') || t.classList.contains('btn-off')) {
         const kutu = t.closest('.kutu'); const aktifMi = t.classList.contains('btn-on');
         if (kutu.dataset.tip === "silo") silolar[kutu.dataset.index].aktif = aktifMi;
         if (kutu.dataset.tip === "firin") firinlar[kutu.dataset.index].aktif = aktifMi;
         if (kutu.dataset.tip === "makina") makinalar[kutu.dataset.index].aktif = aktifMi;
-        ekranlariCiz(); return;
+        
+        // Sadece sınıfı güncelle ki tüm HTML baştan çizilip seçimler iptal olmasın
+        t.parentElement.querySelector('.btn-on').classList.toggle('aktif-buton', aktifMi);
+        t.parentElement.querySelector('.btn-off').classList.toggle('aktif-buton', !aktifMi);
+        return;
     }
-    
     if (t.classList.contains('umbau-lambasi')) {
         const idx = t.closest('.kutu').dataset.index; makinalar[idx].umbau = !makinalar[idx].umbau;
-        ekranlariCiz(); return;
+        t.classList.toggle('umbau-aktif'); return;
     }
 
     const kutu = t.closest('.kutu');
-    if (kutu && !t.matches('button') && !t.matches('.umbau-lambasi') && !suruklendiMi) {
-        seciliTip = kutu.dataset.tip; seciliIndex = parseInt(kutu.dataset.index);
-        let idStr = kutu.id;
+    // Eğer çift tıkladıysa veya tıklayıp bırakma çok kısa sürdüyse detay penceresini aç
+    if (kutu && !t.matches('button') && !t.matches('.umbau-lambasi') && !kutuSurukleniyor && !e.ctrlKey && !e.shiftKey) {
         
-        // MODAL İÇİN GELEN BAĞLANTILARI BUL VE YAZDIR
-        let gelenler = gelenBaglantilariBul(idStr);
-        let gelenListesi = document.getElementById('gelen-listesi');
-        if(gelenler.length > 0) {
-            gelenListesi.innerHTML = gelenler.map(g => `<li>${g}</li>`).join('');
-        } else {
-            gelenListesi.innerHTML = "<li>Henüz bir malzeme girişi yok.</li>";
-        }
-
+        // Kutunun sürüklendiğini tespit etmek için hafif bir gecikme engeli
+        seciliTip = kutu.dataset.tip; seciliIndex = parseInt(kutu.dataset.index);
+        
+        document.getElementById('gelen-listesi').innerHTML = gelenBaglantilariBul(kutu.id).map(g => `<li>${g}</li>`).join('') || "<li>Henüz giriş yok.</li>";
         document.getElementById('silo-kanallari-inputlari').style.display = "none";
         document.getElementById('firin-hedef-inputu').style.display = "none";
 
@@ -337,7 +344,4 @@ document.addEventListener('click', (e) => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-    ekranlariCiz();
-    animasyonDongusu(); 
-});
+document.addEventListener("DOMContentLoaded", () => { ekranlariCiz(); animasyonDongusu(); });
