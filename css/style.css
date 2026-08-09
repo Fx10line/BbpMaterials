@@ -1,83 +1,73 @@
-/* --- TEMEL AYARLAR VE RENKLER --- */
 :root {
-  --bg: #f4f6f8;
+  --bg: #eef2f5;
   --card: #ffffff;
   --accent: #2b7cff;
   --danger: #e74c3c;
   --success: #2ecc71;
   --muted: #666;
-  --gap: 20px;
-  font-family: system-ui, -apple-system, sans-serif;
+  --gap: 30px;
+  font-family: system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: #111; position: relative; }
+
+/* CANVAS AYARLARI (Görünmez tuval) */
+#cizim-alani {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Mouse tıklamaları içinden geçip butonlara ulaşır */
+  z-index: 0; /* Arka planda kalır */
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: #111; line-height: 1.4; }
+.ust-bilgi { background: #1a252f; color: #fff; padding: 15px 20px; text-align: center; position: relative; z-index: 2; }
+.ust-bilgi h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
 
-.ust-bilgi { background: var(--accent); color: #fff; padding: 15px 20px; text-align: center; }
-.ust-bilgi h1 { margin: 0; font-size: 1.5rem; }
-
-/* --- 3 SÜTUNLU YAPI --- */
 .pano-kapsayici {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--gap);
   padding: 20px;
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1; /* Kutular canvasın üstünde durur */
 }
 
 .sutun { background: transparent; }
-.sutun h2 { margin: 0 0 5px 0; font-size: 1.1rem; text-align: center; border-bottom: 2px solid #ddd; padding-bottom: 10px;}
-.aciklama { color: var(--muted); margin: 0 0 15px 0; font-size: 0.9rem; text-align: center; }
+.sutun h2 { text-align: center; border-bottom: 2px solid #ccc; padding-bottom: 10px;}
 
-/* --- KART TASARIMLARI (Silo, Fırın, Makina) --- */
 .kutu {
   background: var(--card);
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  margin-bottom: 15px;
-  cursor: pointer; /* Tıklanabilir olduğunu gösterir */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
   position: relative;
   border: 2px solid transparent;
-  transition: border 0.3s;
 }
-.kutu:hover { border: 2px solid var(--accent); } /* Üzerine gelince mavi çerçeve */
+.kutu:hover { border: 2px solid var(--accent); }
 
-.kutu-baslik { font-weight: bold; margin-bottom: 8px; font-size: 1.1rem; color: #2c3e50;}
-.kutu-bilgi { color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; font-weight: 500;}
+.kutu-baslik { font-weight: bold; font-size: 1.1rem; color: #2c3e50; margin-bottom: 5px;}
+.kutu-bilgi { color: var(--muted); font-size: 0.9rem; margin-bottom: 10px;}
 
-/* Silolar için 4'lü Kanal Görünümü */
 .kanal-bilgileri {
-  background: #e9ecef;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  margin-bottom: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Yanyana 2 sütun */
-  gap: 5px;
-  color: #333;
+  background: #f8f9fa; padding: 5px; border-radius: 4px;
+  font-size: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; color: #444; border: 1px solid #eee;
 }
 
-/* --- GÜÇ DÜĞMELERİ (ON/OFF) --- */
-.guc-dugmeleri { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-.guc-dugmeleri button {
-  flex: 1; border: 1px solid #ddd; background: #fff;
-  padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold;
-}
-/* Seçili Buton Efektleri */
+.guc-dugmeleri { display: flex; gap: 10px; margin-top: 10px; }
+.guc-dugmeleri button { flex: 1; border: 1px solid #ddd; padding: 6px; cursor: pointer; font-weight: bold; border-radius: 4px;}
 .btn-on.aktif-buton { background: var(--success); color: white; border-color: var(--success); }
 .btn-off.aktif-buton { background: var(--danger); color: white; border-color: var(--danger); }
 
-/* --- UMBAU UYARI LAMBASI --- */
 .umbau-lambasi {
   width: 16px; height: 16px; border-radius: 50%;
-  position: absolute; right: 15px; top: 15px; /* Sağ üst köşeye sabitle */
-  background: #bbb; border: 2px solid rgba(0,0,0,0.1);
-  cursor: pointer;
+  position: absolute; right: 15px; top: 15px;
+  background: #bbb; cursor: pointer;
 }
-/* Lamba aktifse yanıp söner */
 .umbau-aktif { background: #ff9800; animation: flash 1s infinite; }
 @keyframes flash {
   0% { box-shadow: 0 0 5px #ff9800; }
@@ -85,27 +75,9 @@ body { margin: 0; background: var(--bg); color: #111; line-height: 1.4; }
   100% { box-shadow: 0 0 5px #ff9800; }
 }
 
-/* --- MODAL (POP-UP) PENCERE TASARIMI --- */
-.modal {
-  position: fixed; z-index: 100; left: 0; top: 0;
-  width: 100%; height: 100%; background: rgba(0,0,0,0.6);
-}
-.modal-icerik {
-  background: #fff; margin: 5% auto; padding: 25px;
-  border-radius: 10px; width: 90%; max-width: 400px; position: relative;
-}
-.kapat-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #555; }
-.kapat-btn:hover { color: #000; }
-.modal-input {
-  width: 100%; padding: 10px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 5px;
-}
-.kaydet-btn {
-  background: var(--accent); color: white; width: 100%; padding: 12px;
-  border: none; border-radius: 5px; font-size: 1rem; cursor: pointer;
-}
-.kaydet-btn:hover { background: #1a5bbf; }
-
-/* Responsive (Telefon ekranları için) */
-@media (max-width: 900px) {
-  .pano-kapsayici { grid-template-columns: 1fr; }
-}
+/* Modal */
+.modal { position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+.modal-icerik { background: #fff; margin: 5% auto; padding: 25px; border-radius: 8px; width: 350px; position: relative; }
+.kapat-btn { position: absolute; right: 20px; top: 10px; font-size: 24px; cursor: pointer; }
+.modal-input { width: 100%; padding: 8px; margin: 5px 0 10px 0; border: 1px solid #ccc; }
+.kaydet-btn { background: var(--accent); color: white; width: 100%; padding: 10px; border: none; cursor: pointer; margin-top: 15px;}
