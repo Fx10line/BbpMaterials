@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fabrika Malzeme Akış ve Takip Sistemi - BBP Kunststoffwerk Üretim Takip Panosu">
     <title>Fabrika Malzeme Akış ve Takip Sistemi</title>
     <!-- CSS dosyamızı sayfamıza bağlıyoruz -->
     <link rel="stylesheet" href="css/style.css">
@@ -23,9 +24,13 @@
             <p class="aciklama">Hammadde Depolama</p>
             
             <!-- Örnek bir Silo Kutusu (Şimdilik tasarımı görmek için 1 tane koyuyoruz) -->
-            <div class="silo-kutusu">
+            <div class="silo-kutusu" role="region" aria-label="Silo 1">
                 <div class="kutu-baslik">Silo 1</div>
                 <div class="kutu-bilgi">Materyal: Polipropilen (PP)</div>
+                <div class="guc-dugmeleri">
+                    <button class="btn-on">ON</button>
+                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
+                </div>
             </div>
         </section>
 
@@ -35,13 +40,13 @@
             <p class="aciklama">Nem ve Sıcaklık Kontrolü</p>
 
             <!-- Örnek bir Fırın Kutusu -->
-            <div class="firin-kutusu">
+            <div class="firin-kutusu" role="region" aria-label="Fırın 1">
                 <div class="kutu-baslik">Fırın 1</div>
                 <div class="kutu-bilgi">Sıcaklık: 80°C</div>
                 <!-- Fırın için ON/OFF düğmeleri -->
                 <div class="guc-dugmeleri">
-                    <button class="btn-on aktif-buton">ON</button>
-                    <button class="btn-off">OFF</button>
+                    <button class="btn-on">ON</button>
+                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
                 </div>
             </div>
         </section>
@@ -52,20 +57,22 @@
             <p class="aciklama">Üretim Hattı</p>
 
             <!-- Örnek bir Makina Kutusu (Umbau lambası ile) -->
-            <div class="makina-kutusu">
+            <div class="makina-kutusu" role="region" aria-label="Makina 1">
                 <!-- Umbau lambası: "umbau-aktif" sınıfı silinirse lamba söner -->
-                <div class="umbau-lambasi umbau-aktif" title="Kalıp Değişimi (Umbau) Yapılıyor"></div>
+                <div class="umbau-lambasi umbau-aktif" title="Kalıp Değişimi (Umbau) Yapılıyor" role="img" aria-label="Umbau lambası"></div>
                 <div class="kutu-baslik">Makina 1</div>
                 <div class="kutu-bilgi">Ürün: Kapak V2</div>
                 <!-- Makina için ON/OFF düğmeleri -->
                 <div class="guc-dugmeleri">
                     <button class="btn-on">ON</button>
-                    <button class="btn-off aktif-buton">OFF</button>
+                    <button class="btn-off aktif-buton" aria-pressed="true">OFF</button>
                 </div>
             </div>
         </section>
 
     </main>
 
+    <!-- JS dosyamızı ekliyoruz -->
+    <script src="js/script.js"></script>
 </body>
 </html>

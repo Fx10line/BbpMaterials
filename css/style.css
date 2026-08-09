@@ -1,123 +1,81 @@
-/* --- GENEL AYARLAR --- */
-/* Tüm sayfanın arka planı ve yazı tipi ayarları */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f6f9; /* Açık gri endüstriyel arka plan */
-    margin: 0;
-    padding: 0;
-    color: #333;
+/* Basit panel düzeni ve buton/umbau stili */
+:root{
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --accent:#2b7cff;
+  --danger:#e74c3c;
+  --muted:#666;
+  --gap:16px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:#111;
+  line-height:1.3;
+}
+.ust-bilgi{
+  background:var(--accent);
+  color:#fff;
+  padding:18px 20px;
+}
+.ust-bilgi h1{margin:0;font-size:1.2rem}
+
+.pano-kapsayici{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:var(--gap);
+  padding:20px;
+  max-width:1200px;
+  margin:18px auto;
 }
 
-/* Üst başlık tasarımı */
-.ust-bilgi {
-    background-color: #1e3a5f; /* Koyu mavi fabrika teması */
-    color: white;
-    text-align: center;
-    padding: 15px 0;
-    margin-bottom: 20px;
+/* Sütun kartları */
+.sutun{
+  background:transparent;
 }
-.ust-bilgi h1 { margin: 0; font-size: 24px; }
+.sutun h2{
+  margin:0 0 6px 0;
+  font-size:1rem;
+}
+.aciklama{color:var(--muted);margin:0 0 10px 0;font-size:0.9rem}
 
-/* --- 3 SÜTUNLU YAPI --- */
-/* Silolar, Fırınlar ve Makinaları yan yana dizen kutu */
-.pano-kapsayici {
-    display: flex;
-    justify-content: space-around; /* Sütunlar arasına eşit boşluk bırakır */
-    padding: 0 20px;
+/* Kart kutuları */
+.silo-kutusu, .firin-kutusu, .makina-kutusu{
+  background:var(--card);
+  padding:12px;
+  border-radius:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  margin-bottom:12px;
 }
+.kutu-baslik{font-weight:600;margin-bottom:6px}
+.kutu-bilgi{color:var(--muted);font-size:0.9rem}
 
-/* Her bir sütunun (bölümün) tasarımı */
-.sutun {
-    width: 30%; /* Sayfanın 3'te 1'ini kaplasın */
-    background-color: #ffffff;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Hafif gölge efekti */
-    min-height: 80vh; /* Ekranın büyük kısmını kaplasın */
+/* Güç düğmeleri */
+.guc-dugmeleri{margin-top:10px;display:flex;gap:8px}
+button{
+  border:1px solid #ddd;
+  background:#fff;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
 }
-
-.sutun h2 {
-    text-align: center;
-    border-bottom: 2px solid #1e3a5f;
-    padding-bottom: 10px;
-    margin-top: 0;
-}
-.sutun .aciklama {
-    text-align: center;
-    color: #777;
-    font-size: 14px;
-    margin-bottom: 20px;
+button.aktif-buton{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
 }
 
-/* --- KUTU TASARIMLARI (SİLO, FIRIN, MAKİNA) --- */
-/* Ekrandaki cihazları temsil eden ortak tasarım */
-.silo-kutusu, .firin-kutusu, .makina-kutusu {
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    background-color: #fafafa;
-    text-align: center;
-    position: relative; /* Lambayı tepeye koyabilmek için gerekli */
+/* Umbau lambası */
+.umbau-lambasi{
+  width:12px;height:12px;border-radius:50%;
+  display:inline-block;margin-right:8px;vertical-align:middle;
+  background:#bbb;border:2px solid rgba(0,0,0,0.05);
 }
+.umbau-aktif{ background:#e74c3c; box-shadow:0 0 6px rgba(231,76,60,0.6) }
 
-.kutu-baslik {
-    font-weight: bold;
-    font-size: 18px;
-    margin-bottom: 10px;
+/* Responsive */
+@media (max-width:900px){
+  .pano-kapsayici{grid-template-columns:1fr}
 }
-.kutu-bilgi {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 15px;
-}
-
-/* --- UYARI LAMBASI (UMBAU) TASARIMI --- */
-.umbau-lambasi {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%; /* Yuvarlak yapar */
-    background-color: #555; /* Normalde sönük (Gri) */
-    margin: 0 auto 15px auto;
-    border: 2px solid #333;
-}
-
-/* Bu sınıf eklendiğinde lamba yanıp sönmeye başlar */
-.umbau-aktif {
-    background-color: #ff9800; /* Turuncu uyarı rengi */
-    animation: yanip-sonme 1s infinite; /* 1 saniyede bir sonsuza kadar tekrarla */
-}
-
-/* Animasyonun kendisi: Işık yayma (gölge) efekti */
-@keyframes yanip-sonme {
-    0% { box-shadow: 0 0 5px #ff9800; }
-    50% { box-shadow: 0 0 25px #ff0000; background-color: #ff3d00; } /* Ortada parlar */
-    100% { box-shadow: 0 0 5px #ff9800; }
-}
-
-/* --- ON/OFF BUTONLARI --- */
-.guc-dugmeleri {
-    display: flex;
-    justify-content: center;
-    gap: 10px; /* İki buton arası boşluk */
-}
-
-.guc-dugmeleri button {
-    padding: 8px 15px;
-    font-weight: bold;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-/* ON Butonu: Üzerine gelince yeşil olur */
-.btn-on { background-color: #e0e0e0; }
-.btn-on:hover { background-color: #4caf50; color: white; }
-
-/* OFF Butonu: Üzerine gelince kırmızı olur */
-.btn-off { background-color: #e0e0e0; }
-.btn-off:hover { background-color: #f44336; color: white; }
-
-/* O an seçili olan düğmenin (Örn: Makina çalışıyorsa ON butonu) tasarımı */
-.aktif-buton.btn-on { background-color: #4caf50; color: white; box-shadow: inset 0px 0px 5px #222;}
-.aktif-buton.btn-off { background-color: #f44336; color: white; box-shadow: inset 0px 0px 5px #222;}
