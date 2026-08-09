@@ -22,7 +22,7 @@
         <div id="cihazlar-kapsayici"></div>
     </main>
 
-    <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
+   <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
     <div id="detay-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
@@ -33,15 +33,18 @@
             
             <div id="modal-baglanti-alani">
                 <hr>
-                <h4>Hedef Bağlantılar (Örn: firin_1, makina_5)</h4>
+                <h4 style="margin-bottom: 5px;">Hedef Bağlantılar</h4>
+                <p style="font-size: 11px; color: #666; margin-top: 0;">Birden fazla cihaza bağlamak için araya virgül koyun. (Örn: firin_7, makina_2)</p>
+                
                 <div id="silo-kanallari-inputlari">
-                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
-                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input">
-                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input">
-                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input">
+                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input" placeholder="Örn: firin_1, makina_5">
+                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input" placeholder="Boş">
+                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input" placeholder="Boş">
+                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input" placeholder="Boş">
                 </div>
+                
                 <div id="firin-hedef-inputu" style="display: none;">
-                    <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input">
+                    <label>Hedef Makinalar:</label> <input type="text" id="modal-firin-hedef" class="modal-input" placeholder="Örn: makina_1, makina_2">
                 </div>
             </div>
             <button id="modal-kaydet" class="kaydet-btn">Kaydet ve Güncelle</button>
