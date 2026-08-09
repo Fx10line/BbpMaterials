@@ -121,7 +121,22 @@ document.addEventListener('mouseup', () => {
     if (suruklenenKutu) {
         suruklenenKutu.style.zIndex = "";
         
-        // (İsteğe Bağlı: Burada yeni X ve Y verilerini diziye kaydedebilirsin)
+        // YENİ EKLENEN BÖLÜM: Kutunun yeni konumunu (X ve Y) bulup hafızaya (diziye) kaydet
+        const yeniX = parseInt(suruklenenKutu.style.left);
+        const yeniY = parseInt(suruklenenKutu.style.top);
+        const tip = suruklenenKutu.dataset.tip;
+        const index = parseInt(suruklenenKutu.dataset.index);
+
+        if (tip === "silo") {
+            silolar[index].x = yeniX;
+            silolar[index].y = yeniY;
+        } else if (tip === "firin") {
+            firinlar[index].x = yeniX;
+            firinlar[index].y = yeniY;
+        } else if (tip === "makina") {
+            makinalar[index].x = yeniX;
+            makinalar[index].y = yeniY;
+        }
         
         suruklenenKutu = null;
         // Tıklama olayının (Modal açılışının) sürükleme bittikten hemen sonra tetiklenmesini engelle
