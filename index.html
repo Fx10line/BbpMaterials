@@ -3,37 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Fabrika Malzeme Akış Sistemi">
-    <title>BBP Kunststoffwerk - Üretim Takip</title>
+    <title>BBP Kunststoffwerk - İnteraktif Fabrika Sahası</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- ÇİZGİLERİN ÇİZİLECEĞİ GÖRÜNMEZ TUVAL (CANVAS) -->
-    <canvas id="cizim-alani"></canvas>
-
     <header class="ust-bilgi">
-        <h1>BBP Kunststoffwerk - Canlı Akış Haritası</h1>
+        <h1>BBP Kunststoffwerk - İnteraktif Akış Haritası</h1>
+        <p style="margin:5px 0 0 0; font-size:14px; color:#aaa;">Cihazları mouse ile sürükleyerek yerlerini değiştirebilirsiniz.</p>
     </header>
 
-    <main class="pano-kapsayici">
-        <!-- 1. SÜTUN: SİLOLAR -->
-        <section class="sutun" id="silolar-sutunu">
-            <h2>SİLOLAR</h2>
-            <div id="silo-listesi"></div>
-        </section>
-
-        <!-- 2. SÜTUN: FIRINLAR -->
-        <section class="sutun" id="firinlar-sutunu">
-            <h2>KURUTMA FIRINLARI</h2>
-            <div id="firin-listesi"></div>
-        </section>
-
-        <!-- 3. SÜTUN: MAKİNALAR -->
-        <section class="sutun" id="makinalar-sutunu">
-            <h2>ENJEKSİYON MAKİNALARI</h2>
-            <div id="makina-listesi"></div>
-        </section>
+    <!-- GENİŞ FABRİKA SAHASI (Sürüklenebilir alan) -->
+    <main id="fabrika-sahasi">
+        <!-- Çizgilerin çizileceği devasa görünmez tuval -->
+        <canvas id="cizim-alani"></canvas>
+        
+        <!-- Tüm cihazların içine atılacağı kapsayıcı -->
+        <div id="cihazlar-kapsayici"></div>
     </main>
 
     <!-- DETAY / GÜNCELLEME PENCERESİ (MODAL) -->
@@ -45,21 +31,19 @@
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
-            <!-- Silo ve Fırın Bağlantı Ayarları -->
             <div id="modal-baglanti-alani">
                 <hr>
-                <h4>Hedef Bağlantılar (Örn: firin_1 veya makina_5)</h4>
+                <h4>Hedef Bağlantılar (Örn: firin_1, makina_5)</h4>
                 <div id="silo-kanallari-inputlari">
-                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input" placeholder="Boş">
-                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input" placeholder="Boş">
-                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input" placeholder="Boş">
-                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input" placeholder="Boş">
+                    <label>Kanal 1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
+                    <label>Kanal 2:</label> <input type="text" id="modal-kanal-2" class="modal-input">
+                    <label>Kanal 3:</label> <input type="text" id="modal-kanal-3" class="modal-input">
+                    <label>Kanal 4:</label> <input type="text" id="modal-kanal-4" class="modal-input">
                 </div>
                 <div id="firin-hedef-inputu" style="display: none;">
-                    <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input" placeholder="Boş">
+                    <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input">
                 </div>
             </div>
-
             <button id="modal-kaydet" class="kaydet-btn">Kaydet ve Güncelle</button>
         </div>
     </div>
