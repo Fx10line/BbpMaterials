@@ -1,16 +1,15 @@
-// ==========================================
-// 1. VERİ TABANI (Geçici Hafıza)
-// ==========================================
+// --- 1. VERİ TABANI ---
 
 // SİLOLAR (14 Adet)
 let silolar = [];
 for (let i = 1; i <= 14; i++) {
     silolar.push({
-        id: i,
+        id_str: `silo_${i}`,
         isim: `Silo ${i}`,
-        materyal: "Polipropilen (PP)", // Varsayılan malzeme
-        aktif: true, // true=ON, false=OFF
-        kanallar: ["Boş", "Boş", "Boş", "Boş"] // 4 Çıkış kanalı
+        materyal: "PP",
+        aktif: true,
+        // Örnek: İlk silo firin_1'e ve makina_2'ye bağlı başlasın
+        kanallar: (i === 1) ? ["firin_1", "makina_2", "Boş", "Boş"] : ["Boş", "Boş", "Boş", "Boş"]
     });
 }
 
@@ -18,10 +17,12 @@ for (let i = 1; i <= 14; i++) {
 let firinlar = [];
 for (let i = 1; i <= 16; i++) {
     firinlar.push({
-        id: i,
+        id_str: `firin_${i}`,
         isim: `Fırın ${i}`,
-        sicaklik: "80°C", // Varsayılan sıcaklık
-        aktif: false 
+        sicaklik: "80°C",
+        aktif: true,
+        // Örnek: İlk fırın makina_1'e malzeme versin
+        hedef: (i === 1) ? "makina_1" : "Boş" 
     });
 }
 
@@ -29,211 +30,199 @@ for (let i = 1; i <= 16; i++) {
 let makinalar = [];
 for (let i = 1; i <= 19; i++) {
     makinalar.push({
-        id: i,
+        id_str: `makina_${i}`,
         isim: `Makina ${i}`,
-        urun: "Kapak V2", // Üretilen ürün
+        urun: "Kapak V2",
         aktif: true,
-        umbau: false // true ise lamba yanar
+        umbau: false
     });
 }
 
-// ==========================================
-// 2. EKRANA ÇİZME (RENDER) FONKSİYONLARI
-// ==========================================
 
-// Siloları ekrana yerleştirir
-function silolariCiz() {
-    const kutu = document.getElementById('silo-listesi');
-    kutu.innerHTML = ""; // İçini temizle
-    
-    silolar.forEach((silo, index) => {
-        const onClass = silo.aktif ? "aktif-buton" : "";
-        const offClass = !silo.aktif ? "aktif-buton" : "";
-        
-        kutu.innerHTML += `
-            <div class="kutu" data-tip="silo" data-index="${index}">
-                <div class="kutu-baslik">${silo.isim}</div>
-                <div class="kutu-bilgi">Mat: ${silo.materyal}</div>
-                
-                <!-- 4 Kanal Gösterimi -->
-                <div class="kanal-bilgileri">
-                    <div>Ç1: ${silo.kanallar[0]}</div>
-                    <div>Ç2: ${silo.kanallar[1]}</div>
-                    <div>Ç3: ${silo.kanallar[2]}</div>
-                    <div>Ç4: ${silo.kanallar[3]}</div>
-                </div>
-
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${onClass}">ON</button>
-                    <button class="btn-off ${offClass}">OFF</button>
-                </div>
+// --- 2. HTML OLUŞTURMA ---
+function ekranlariCiz() {
+    // Silolar
+    document.getElementById('silo-listesi').innerHTML = silolar.map((s, i) => `
+        <div class="kutu" id="${s.id_str}" data-tip="silo" data-index="${i}">
+            <div class="kutu-baslik">${s.isim}</div>
+            <div class="kutu-bilgi">Mat: ${s.materyal}</div>
+            <div class="kanal-bilgileri">
+                <div>1: ${s.kanallar[0]}</div> <div>2: ${s.kanallar[1]}</div>
+                <div>3: ${s.kanallar[2]}</div> <div>4: ${s.kanallar[3]}</div>
             </div>
-        `;
-    });
-}
-
-// Fırınları ekrana yerleştirir
-function firinlariCiz() {
-    const kutu = document.getElementById('firin-listesi');
-    kutu.innerHTML = ""; 
-    
-    firinlar.forEach((firin, index) => {
-        const onClass = firin.aktif ? "aktif-buton" : "";
-        const offClass = !firin.aktif ? "aktif-buton" : "";
-        
-        kutu.innerHTML += `
-            <div class="kutu" data-tip="firin" data-index="${index}">
-                <div class="kutu-baslik">${firin.isim}</div>
-                <div class="kutu-bilgi">Sıcaklık: ${firin.sicaklik}</div>
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${onClass}">ON</button>
-                    <button class="btn-off ${offClass}">OFF</button>
-                </div>
+            <div class="guc-dugmeleri">
+                <button class="btn-on ${s.aktif ? 'aktif-buton':''}">ON</button>
+                <button class="btn-off ${!s.aktif ? 'aktif-buton':''}">OFF</button>
             </div>
-        `;
-    });
-}
+        </div>
+    `).join('');
 
-// Makinaları ekrana yerleştirir
-function makinalariCiz() {
-    const kutu = document.getElementById('makina-listesi');
-    kutu.innerHTML = ""; 
-    
-    makinalar.forEach((makina, index) => {
-        const onClass = makina.aktif ? "aktif-buton" : "";
-        const offClass = !makina.aktif ? "aktif-buton" : "";
-        const umbauClass = makina.umbau ? "umbau-aktif" : "";
-        
-        kutu.innerHTML += `
-            <div class="kutu" data-tip="makina" data-index="${index}">
-                <!-- Umbau Lambası -->
-                <div class="umbau-lambasi ${umbauClass}" title="Umbau Değiştir"></div>
-                
-                <div class="kutu-baslik">${makina.isim}</div>
-                <div class="kutu-bilgi">Ürün: ${makina.urun}</div>
-                
-                <div class="guc-dugmeleri">
-                    <button class="btn-on ${onClass}">ON</button>
-                    <button class="btn-off ${offClass}">OFF</button>
-                </div>
+    // Fırınlar
+    document.getElementById('firin-listesi').innerHTML = firinlar.map((f, i) => `
+        <div class="kutu" id="${f.id_str}" data-tip="firin" data-index="${i}">
+            <div class="kutu-baslik">${f.isim}</div>
+            <div class="kutu-bilgi">Isı: ${f.sicaklik} <br> <small>Hedef: ${f.hedef}</small></div>
+            <div class="guc-dugmeleri">
+                <button class="btn-on ${f.aktif ? 'aktif-buton':''}">ON</button>
+                <button class="btn-off ${!f.aktif ? 'aktif-buton':''}">OFF</button>
             </div>
-        `;
+        </div>
+    `).join('');
+
+    // Makinalar
+    document.getElementById('makina-listesi').innerHTML = makinalar.map((m, i) => `
+        <div class="kutu" id="${m.id_str}" data-tip="makina" data-index="${i}">
+            <div class="umbau-lambasi ${m.umbau ? 'umbau-aktif':''}"></div>
+            <div class="kutu-baslik">${m.isim}</div>
+            <div class="kutu-bilgi">Ürün: ${m.urun}</div>
+            <div class="guc-dugmeleri">
+                <button class="btn-on ${m.aktif ? 'aktif-buton':''}">ON</button>
+                <button class="btn-off ${!m.aktif ? 'aktif-buton':''}">OFF</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+
+// --- 3. CANVAS (ANİMASYONLU ÇİZGİLER) ---
+const canvas = document.getElementById('cizim-alani');
+const ctx = canvas.getContext('2d');
+let dashOffset = 0;
+
+function akisCizgileriniGuncelle() {
+    // Canvas'ı tam sayfa boyutuna ayarla
+    canvas.width = document.body.scrollWidth;
+    canvas.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Silolardan çıkan çizgiler (Mavi)
+    silolar.forEach(silo => {
+        if (!silo.aktif) return; // Kutu kapalıysa çizgi akmasın (isteğe bağlı)
+        silo.kanallar.forEach(hedefId => {
+            if (hedefId && hedefId !== "Boş") cizgiCiz(silo.id_str, hedefId, "#3498db");
+        });
+    });
+
+    // Fırınlardan çıkan çizgiler (Turuncu)
+    firinlar.forEach(firin => {
+        if (!firin.aktif) return;
+        if (firin.hedef && firin.hedef !== "Boş") cizgiCiz(firin.id_str, firin.hedef, "#e67e22");
     });
 }
 
-// Tüm ekranı baştan çizer
-function tumEkraniGuncelle() {
-    silolariCiz();
-    firinlariCiz();
-    makinalariCiz();
+function cizgiCiz(kaynakId, hedefId, renk) {
+    const kaynak = document.getElementById(kaynakId);
+    const hedef = document.getElementById(hedefId);
+    if (!kaynak || !hedef) return;
+
+    const kRect = kaynak.getBoundingClientRect();
+    const hRect = hedef.getBoundingClientRect();
+
+    // Çizgi başlangıç (Kaynağın sağ ortası)
+    const startX = kRect.right + window.scrollX;
+    const startY = kRect.top + (kRect.height / 2) + window.scrollY;
+
+    // Çizgi bitiş (Hedefin sol ortası)
+    const endX = hRect.left + window.scrollX;
+    const endY = hRect.top + (hRect.height / 2) + window.scrollY;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    // Kıvrımlı (Bezier) akış
+    const ortaX = (startX + endX) / 2;
+    ctx.bezierCurveTo(ortaX, startY, ortaX, endY, endX, endY);
+
+    ctx.strokeStyle = renk;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 8]); // Kesik çizgi aralığı
+    ctx.lineDashOffset = -dashOffset; // Hareketi sağlayan eksen
+    ctx.stroke();
 }
 
-// ==========================================
-// 3. TIKLAMA OLAYLARI VE MODAL (PENCERE) YÖNETİMİ
-// ==========================================
+// 60FPS Animasyon Motoru
+function animasyonDongusu() {
+    dashOffset += 1.5; // Akış hızı
+    akisCizgileriniGuncelle();
+    requestAnimationFrame(animasyonDongusu);
+}
 
-// Modal için hafızada tutacağımız geçici değişkenler
-let seciliTip = ""; // silo, firin veya makina
-let seciliIndex = null; // Tıklanan elemanın sırası
+
+// --- 4. TIKLAMA / MODAL OLAYLARI ---
+let seciliTip = "";
+let seciliIndex = null;
 
 document.addEventListener('click', (e) => {
-    const tiklanan = e.target;
+    const t = e.target;
 
-    // --- A. GÜÇ DÜĞMELERİ (ON/OFF) TIKLANMASI ---
-    if (tiklanan.classList.contains('btn-on') || tiklanan.classList.contains('btn-off')) {
-        const kutu = tiklanan.closest('.kutu');
-        const tip = kutu.dataset.tip;
-        const index = parseInt(kutu.dataset.index);
-        const onBasildi = tiklanan.classList.contains('btn-on');
-
-        if (tip === "silo") silolar[index].aktif = onBasildi;
-        if (tip === "firin") firinlar[index].aktif = onBasildi;
-        if (tip === "makina") makinalar[index].aktif = onBasildi;
-        
-        tumEkraniGuncelle();
-        return; // İşlem bitince alttaki kodlara geçmesini engelle
+    // A. Güç Butonları
+    if (t.classList.contains('btn-on') || t.classList.contains('btn-off')) {
+        const kutu = t.closest('.kutu');
+        const aktifMi = t.classList.contains('btn-on');
+        if (kutu.dataset.tip === "silo") silolar[kutu.dataset.index].aktif = aktifMi;
+        if (kutu.dataset.tip === "firin") firinlar[kutu.dataset.index].aktif = aktifMi;
+        if (kutu.dataset.tip === "makina") makinalar[kutu.dataset.index].aktif = aktifMi;
+        ekranlariCiz(); return;
     }
 
-    // --- B. UMBAU LAMBASINA TIKLANMASI ---
-    if (tiklanan.classList.contains('umbau-lambasi')) {
-        const kutu = tiklanan.closest('.kutu');
-        const index = parseInt(kutu.dataset.index);
-        
-        // Umbau durumunu tersine çevir (True ise False, False ise True yap)
-        makinalar[index].umbau = !makinalar[index].umbau;
-        tumEkraniGuncelle();
-        return;
+    // B. Umbau Lambası
+    if (t.classList.contains('umbau-lambasi')) {
+        const idx = t.closest('.kutu').dataset.index;
+        makinalar[idx].umbau = !makinalar[idx].umbau;
+        ekranlariCiz(); return;
     }
 
-    // --- C. KUTUYA TIKLANMASI (MODAL AÇMA) ---
-    const kutu = tiklanan.closest('.kutu');
-    if (kutu && !tiklanan.matches('button') && !tiklanan.matches('.umbau-lambasi')) {
+    // C. Modal Açma
+    const kutu = t.closest('.kutu');
+    if (kutu && !t.matches('button') && !t.matches('.umbau-lambasi')) {
         seciliTip = kutu.dataset.tip;
         seciliIndex = parseInt(kutu.dataset.index);
         
-        const modal = document.getElementById('detay-modal');
-        const kanalAlani = document.getElementById('modal-kanallar-alani');
-        const anaVeriInput = document.getElementById('modal-input-veri');
+        document.getElementById('silo-kanallari-inputlari').style.display = "none";
+        document.getElementById('firin-hedef-inputu').style.display = "none";
 
-        // Hangi tipe tıklandıysa modalı ona göre doldur
         if (seciliTip === "silo") {
-            const silo = silolar[seciliIndex];
-            document.getElementById('modal-baslik').innerText = silo.isim + " Ayarları";
-            document.getElementById('modal-etiket').innerText = "İçindeki Materyal:";
-            anaVeriInput.value = silo.materyal;
-            
-            // Silo için 4 kanalı da ekrana getir
-            kanalAlani.style.display = "block";
-            document.getElementById('modal-kanal-1').value = silo.kanallar[0];
-            document.getElementById('modal-kanal-2').value = silo.kanallar[1];
-            document.getElementById('modal-kanal-3').value = silo.kanallar[2];
-            document.getElementById('modal-kanal-4').value = silo.kanallar[3];
+            document.getElementById('modal-baslik').innerText = silolar[seciliIndex].isim;
+            document.getElementById('modal-input-veri').value = silolar[seciliIndex].materyal;
+            document.getElementById('silo-kanallari-inputlari').style.display = "block";
+            for(let i=1; i<=4; i++) document.getElementById(`modal-kanal-${i}`).value = silolar[seciliIndex].kanallar[i-1];
         } 
         else if (seciliTip === "firin") {
-            const firin = firinlar[seciliIndex];
-            document.getElementById('modal-baslik').innerText = firin.isim + " Ayarları";
-            document.getElementById('modal-etiket').innerText = "Fırın Sıcaklığı:";
-            anaVeriInput.value = firin.sicaklik;
-            kanalAlani.style.display = "none"; // Fırında kanal gizli
+            document.getElementById('modal-baslik').innerText = firinlar[seciliIndex].isim;
+            document.getElementById('modal-input-veri').value = firinlar[seciliIndex].sicaklik;
+            document.getElementById('firin-hedef-inputu').style.display = "block";
+            document.getElementById('modal-firin-hedef').value = firinlar[seciliIndex].hedef;
+        } 
+        else {
+            document.getElementById('modal-baslik').innerText = makinalar[seciliIndex].isim;
+            document.getElementById('modal-input-veri').value = makinalar[seciliIndex].urun;
         }
-        else if (seciliTip === "makina") {
-            const makina = makinalar[seciliIndex];
-            document.getElementById('modal-baslik').innerText = makina.isim + " Ayarları";
-            document.getElementById('modal-etiket').innerText = "Üretilen Ürün / Plan:";
-            anaVeriInput.value = makina.urun;
-            kanalAlani.style.display = "none"; // Makinada kanal gizli
-        }
-
-        modal.style.display = "block";
+        document.getElementById('detay-modal').style.display = "block";
     }
 
-    // --- D. MODALI KAPATMA ---
-    if (tiklanan.id === "modal-kapat") {
+    // D. Modal Kapat / Kaydet
+    if (t.id === "modal-kapat") document.getElementById('detay-modal').style.display = "none";
+    
+    if (t.id === "modal-kaydet") {
+        const veri = document.getElementById('modal-input-veri').value;
+        if (seciliTip === "silo") {
+            silolar[seciliIndex].materyal = veri;
+            for(let i=1; i<=4; i++) silolar[seciliIndex].kanallar[i-1] = document.getElementById(`modal-kanal-${i}`).value;
+        } else if (seciliTip === "firin") {
+            firinlar[seciliIndex].sicaklik = veri;
+            firinlar[seciliIndex].hedef = document.getElementById('modal-firin-hedef').value;
+        } else {
+            makinalar[seciliIndex].urun = veri;
+        }
         document.getElementById('detay-modal').style.display = "none";
-    }
-
-    // --- E. MODALDAKİ KAYDET BUTONUNA BASILMASI ---
-    if (tiklanan.id === "modal-kaydet") {
-        const anaVeri = document.getElementById('modal-input-veri').value;
-        
-        if (seciliTip === "silo") {
-            silolar[seciliIndex].materyal = anaVeri;
-            silolar[seciliIndex].kanallar[0] = document.getElementById('modal-kanal-1').value;
-            silolar[seciliIndex].kanallar[1] = document.getElementById('modal-kanal-2').value;
-            silolar[seciliIndex].kanallar[2] = document.getElementById('modal-kanal-3').value;
-            silolar[seciliIndex].kanallar[3] = document.getElementById('modal-kanal-4').value;
-        } 
-        else if (seciliTip === "firin") {
-            firinlar[seciliIndex].sicaklik = anaVeri;
-        } 
-        else if (seciliTip === "makina") {
-            makinalar[seciliIndex].urun = anaVeri;
-        }
-
-        document.getElementById('detay-modal').style.display = "none"; // Kapat
-        tumEkraniGuncelle(); // Yeni verilerle ekranı yeniden çiz
+        ekranlariCiz(); // Ekranı güncelle
     }
 });
 
-// Sayfa ilk yüklendiğinde çizimi başlat
-document.addEventListener("DOMContentLoaded", tumEkraniGuncelle);
+
+// Başlangıç
+document.addEventListener("DOMContentLoaded", () => {
+    ekranlariCiz();
+    animasyonDongusu(); // Animasyonu Başlat
+});
+// Pencere boyutu değişirse çizgileri kaydırmamak için baştan çiz
+window.addEventListener('resize', ekranlariCiz);
