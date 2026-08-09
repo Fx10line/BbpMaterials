@@ -8,16 +8,12 @@
 </head>
 <body>
 
-    <!-- YÜZEN KONTROL PANELİ (Mobil Uyumlu) -->
     <div id="kontrol-paneli">
         <h2 style="margin:0 0 10px 0; font-size:15px; color:#3498db; text-align:center;">BBP Üretim Takip</h2>
-        
-        <!-- YENİ: MOBİL İÇİN MOD SEÇİCİ -->
         <div class="mod-secici">
             <button id="btn-mod-edit" class="mod-aktif">👆 Düzenle</button>
             <button id="btn-mod-pan">🖐 Gezin</button>
         </div>
-
         <div class="zoom-araclari">
             <button id="btn-zoom-out">-</button>
             <span id="zoom-seviyesi">100%</span>
@@ -25,7 +21,6 @@
         </div>
     </div>
 
-    <!-- EKRAN ÇERÇEVESİ VE SAHNE -->
     <main id="fabrika-sahasi">
         <div id="sahne">
             <canvas id="cizim-alani" width="3000" height="3000"></canvas>
@@ -38,17 +33,27 @@
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
             <h3 id="modal-baslik">Detay Ayarları</h3>
+            
             <label id="modal-etiket">Materyal/Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
-            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:13px;">📥 Gelen Malzemeler (Kaynaklar)</h4>
+            <!-- YENİ EKLENEN: SİLO ÖZEL BİLGİLERİ (Sadece siloya tıklanınca görünür) -->
+            <div id="silo-ozel-bilgiler" style="display: none;">
+                <label>Artikel Kodu:</label>
+                <input type="text" id="modal-input-kod" class="modal-input">
+                
+                <label>Teknik Özellikler / Notlar:</label>
+                <textarea id="modal-input-teknik" class="modal-input" rows="3" placeholder="Bu malzemeye ait teknik değerleri buraya girebilirsiniz..."></textarea>
+            </div>
+            
+            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px; margin-top:10px;">
+                <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:13px;">📥 Gelen Malzemeler</h4>
                 <ul id="gelen-listesi" style="margin: 0; padding-left: 20px; font-size: 12px; color: #444;"></ul>
             </div>
             
             <div id="modal-baglanti-alani">
                 <hr>
-                <h4 style="margin-bottom: 5px; font-size:13px;">📤 Giden Bağlantılar (Hedefler)</h4>
+                <h4 style="margin-bottom: 5px; font-size:13px;">📤 Giden Bağlantılar</h4>
                 
                 <div id="silo-kanallari-inputlari">
                     <label>K.1:</label> <input type="text" id="modal-kanal-1" class="modal-input">
