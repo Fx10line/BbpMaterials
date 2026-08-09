@@ -13,50 +13,88 @@ let firinlar = []; for (let i = 1; i <= 16; i++) { firinlar.push({ id_str: `firi
 const makinaIsimleri = ["400-2", "400-3", "500-9", "600-4", "600-7", "650-2", "650-8", "800-1", "800-4", "850-2", "850-3", "850-4", "900-1", "1000-3", "1000-4", "1100-1", "1450-1", "1600-3", "1700-2", "1700-3"];
 let makinalar = []; makinaIsimleri.forEach((isim, index) => { makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, x: 850, y: index * 120 + 50 }); });
 
-// --- 2. ZİNCİRLEME MATERYAL MOTORU (YENİ FORMAT: Silo 1 > Fırın 3 > Kod) ---
-function zincirlemeMateryalBul(hedefIdStr, tip) {
-    let matListesi = [];
-    let eksikParcaMi = false;
 
-    if (tip === "firin") {
+// --- 2. YENİ: UÇTAN UCA ŞEFFAF ZİNCİR MOTORU ---
+function getCihazIsim(idStr) {
+    let s = silolar.find(x => x.id_str === idStr); if (s) return s.isim;
+    let f = firinlar.find(x => x.id_str === idStr); if (f) return f.isim;
+    let m = makinalar.find(x => x.id_str === idStr); if (m) return m.isim;
+    return null;
+}
+
+// Tüm kutuların üzerindeki o detaylı bilgi panelini oluşturan algoritma
+function baglantiOzetiniOlustur(veri, tip) {
+    let html = "";
+    
+    if (tip === "silo") {
+        let out = [];
+        veri.kanallar.forEach(k => {
+            if (k && k !== "Boş") {
+                k.split(',').forEach(h => {
+                    let isim = getCihazIsim(h.trim());
+                    if(isim) out.push(`<span class="goto-cihaz" data-target="${h.trim()}">${isim}</span>`);
+                });
+            }
+        });
+        out = [...new Set(out)];
+        html = out.length > 0 ? `📤 Giden: ${out.join(', ')}` : `<span style='color:#7f8c8d'>📤 Bağlantı Yok</span>`;
+    } 
+    else if (tip === "firin") {
+        let inc = [];
         silolar.forEach(s => {
             s.kanallar.forEach(k => {
-                if (k && k.includes(hedefIdStr)) {
-                    matListesi.push(`<span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><b>${s.kod}</b> <span style="font-size:9px;">${s.materyal.substring(0,25)}...</span>`);
+                if (k && k.includes(veri.id_str)) {
+                    inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#ecf0f1;"><b>${s.kod}</b> ${s.materyal.substring(0,22)}...</span>`);
                 }
-            });
+            })
         });
-    } else if (tip === "makina") {
+        
+        let out = [];
+        if (veri.hedef && veri.hedef !== "Boş") {
+            veri.hedef.split(',').forEach(h => {
+                let isim = getCihazIsim(h.trim());
+                if(isim) out.push(`<span class="goto-cihaz" data-target="${h.trim()}">${isim}</span>`);
+            });
+        }
+        
+        let incStr = inc.length > 0 ? `${inc.join('<br>')}` : `<span style='color:#7f8c8d'>📥 Boş</span>`;
+        let outStr = out.length > 0 ? `📤 Giden: ${out.join(', ')}` : `<span style='color:#7f8c8d'>📤 Boş</span>`;
+        html = `${incStr}<hr style="margin:4px 0; border-top:1px solid rgba(255,255,255,0.1);">${outStr}`;
+    }
+    else if (tip === "makina") {
+        let inc = [];
+        // Fırın üzerinden gelenler
         firinlar.forEach(f => {
-            if (f.hedef && f.hedef.includes(hedefIdStr)) {
-                let fırınaSiloBaglimi = false;
+            if (f.hedef && f.hedef.includes(veri.id_str)) {
+                let siloBulundu = false;
                 silolar.forEach(s => {
                     s.kanallar.forEach(k => {
                         if (k && k.includes(f.id_str)) {
-                            fırınaSiloBaglimi = true;
-                            matListesi.push(`<span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <br><b>${s.kod}</b> <span style="font-size:9px;">${s.materyal.substring(0,20)}...</span>`);
+                            siloBulundu = true;
+                            inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <br><span style="color:#ecf0f1;"><b>${s.kod}</b> ${s.materyal.substring(0,22)}...</span>`);
                         }
-                    });
+                    })
                 });
-                if (!fırınaSiloBaglimi) {
-                    matListesi.push(`<span style="color:#e74c3c">? (Silo Yok)</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <b>Bilinmiyor</b>`);
-                }
+                // Eğer fırın bir makineye bağlı ama fırına silo bağlı değilse
+                if (!siloBulundu) inc.push(`📥 <span style="color:#e74c3c">? (Silo Yok)</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <b>Bilinmiyor</b>`);
             }
         });
-        // Silodan direkt makinaya kablo çekildiyse
+        // Silodan doğrudan makinaya bağlananlar
         silolar.forEach(s => {
             s.kanallar.forEach(k => {
-                if (k && k.includes(hedefIdStr)) {
-                    matListesi.push(`<span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><b>${s.kod}</b> <span style="font-size:9px;">${s.materyal.substring(0,25)}...</span>`);
+                if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) {
+                    inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#ecf0f1;"><b>${s.kod}</b> ${s.materyal.substring(0,25)}...</span>`);
                 }
-            });
+            })
         });
+        inc = [...new Set(inc)];
+        html = inc.length > 0 ? `${inc.join('<hr style="margin:4px 0; border-top:1px solid rgba(255,255,255,0.1);">')}` : `<span style='color:#7f8c8d'>📥 Boş</span>`;
     }
-
-    matListesi = [...new Set(matListesi)];
-    return matListesi.length > 0 ? matListesi.join('<hr style="margin:4px 0; border-top:1px dashed rgba(255,255,255,0.2);">') : "<span style='color:#e74c3c'>Bağlantı Yok</span>";
+    
+    return `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #555; color:#f1c40f; line-height:1.4; font-size:10.5px;">${html}</div>`;
 }
 
+// Modal içindeki Gelen Malzemeler Listesini Oluşturur
 function gelenBaglantilariBulUI(hedefIdStr) {
     let gelenler = [];
     silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(hedefIdStr)) gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b> (Kanal)<button class="btn-kopar" onclick="baglantiSilGlobal('${s.id_str}', '${hedefIdStr}')">X Sil</button><br><span style="font-size:10px;">${s.kod}</span></li>`); }); });
@@ -101,14 +139,17 @@ function olusturHTML(veri, tip, index, ikon) {
     else if (tip === "firin") { nodeSag = `<div class="node-out tekli" data-kanal="0"></div>`; }
     let lamba = tip === "makina" ? `<div class="umbau-lambasi ${veri.umbau ? 'umbau-aktif':''}"></div>` : "";
     
+    // Kutu üzerindeki ana bilgiyi yaz ve altına zinciri (miras) ekle
     let bilgi = "";
     if (tip === "silo") {
         bilgi = `<b>${veri.kod}</b><br><span style="font-size:10px;">${veri.materyal.substring(0,30)}${veri.materyal.length > 30 ? '...' : ''}</span>`;
     } else if (tip === "firin") {
-        bilgi = `Isı: ${veri.sicaklik}<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #555;">${zincirlemeMateryalBul(veri.id_str, tip)}</div>`;
+        bilgi = `Isı: ${veri.sicaklik}`;
     } else {
-        bilgi = `Ürün: ${veri.urun}<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #555;">${zincirlemeMateryalBul(veri.id_str, tip)}</div>`;
+        bilgi = `Ürün: ${veri.urun}`;
     }
+    
+    bilgi += baglantiOzetiniOlustur(veri, tip); // Zinciri kutunun en altına ekler
 
     return `<div class="kutu" id="${veri.id_str}" data-tip="${tip}" data-index="${index}" style="left: ${veri.x}px; top: ${veri.y}px;">
                 ${nodeSol} ${nodeSag} ${lamba}
@@ -131,26 +172,19 @@ document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale 
 document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(scale * 0.5, 0.2); guncelleSahne(); };
 function guncelleSahne() { sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; document.getElementById('zoom-seviyesi').innerText = Math.round(scale * 100) + '%'; }
 
-// YENİ: KAMERA MERKEZLEME FONKSİYONU
 function cihazaGit(hedefIdStr) {
     const hedef = document.getElementById(hedefIdStr);
     if (!hedef) return;
     
-    // Ekranın tam ortasına hizalamak için panX ve panY hesapla
     const w = document.getElementById('fabrika-sahasi').offsetWidth;
     const h = document.getElementById('fabrika-sahasi').offsetHeight;
+    const kutuX = parseInt(hedef.style.left); const kutuY = parseInt(hedef.style.top);
     
-    const kutuX = parseInt(hedef.style.left);
-    const kutuY = parseInt(hedef.style.top);
-    
-    panX = (w / 2) - ((kutuX + 85) * scale); // 85 kutunun yarısı
-    panY = (h / 2) - ((kutuY + 100) * scale);
-    
+    panX = (w / 2) - ((kutuX + 85) * scale); panY = (h / 2) - ((kutuY + 100) * scale);
     guncelleSahne();
 
-    // Görsel Parlama Efekti
     hedef.classList.remove('highlight');
-    void hedef.offsetWidth; // Reflow tetikleme
+    void hedef.offsetWidth; 
     hedef.classList.add('highlight');
 }
 
@@ -175,7 +209,6 @@ function handleStart(e) {
     if (t.classList.contains('node-out')) { e.preventDefault(); kabloCekiliyor = true; kabloBaslangic = t; return; }
 
     const kutu = t.closest('.kutu');
-    // Eğer tıklanan yer "goto-cihaz" linki ise kutuyu sürükleme
     if (kutu && !t.matches('button') && !t.classList.contains('umbau-lambasi') && !t.classList.contains('node-in') && !t.classList.contains('goto-cihaz')) {
         suruklenenKutu = kutu; kutuSuruklendiMi = false;
         const rect = kutu.getBoundingClientRect();
@@ -292,12 +325,7 @@ function animasyonDongusu() { dashOffset += 1.5; akisCizgileriniGuncelle(); requ
 document.addEventListener('click', (e) => {
     const t = e.target;
     
-    // YENİ: EĞER "SİLO 1" YAZISINA TIKLANDIYSA CİHAZA GİT (KAMERA UÇUŞU)
-    if (t.classList.contains('goto-cihaz')) {
-        cihazaGit(t.dataset.target);
-        return; 
-    }
-
+    if (t.classList.contains('goto-cihaz')) { cihazaGit(t.dataset.target); return; }
     if (t.classList.contains('btn-kopar') || t.classList.contains('node-out') || t.classList.contains('node-in') || t.closest('#kontrol-paneli')) return; 
 
     if (t.classList.contains('btn-toggle')) {
