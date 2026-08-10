@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BBP Kunststoffwerk - Mobil SCADA</title>
+    <title>BBP Kunststoffwerk - SCADA v2.5.0 Çekirdek</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+    <!-- KONTROL PANELİ -->
     <div id="kontrol-paneli">
         <h2 id="panel-baslik">🛠️ BBP Paneli</h2>
         <div id="panel-icerik">
-            <div class="mod-secici">
-                <button id="btn-mod-edit" class="mod-aktif">👆 Düzenle</button>
-                <button id="btn-mod-pan">🖐 Gezin</button>
-            </div>
             <div class="zoom-araclari">
                 <button id="btn-zoom-out">-</button>
                 <span id="zoom-seviyesi">100%</span>
                 <button id="btn-zoom-in">+</button>
             </div>
-            <p style="font-size:9px; color:#aaa; margin:5px 0 0 0; text-align:center;">Kabloyu silmek için boşluğa bırakın.</p>
+            <p style="font-size:10px; color:#aaa; margin:8px 0 0 0; text-align:center;">
+                Bağlamak için: Çıkışa tıkla, hedefe tıkla. Silmek için X kullanın.
+            </p>
+            <div style="font-size:9px; color:#666; text-align:center; margin-top:5px; border-top:1px solid #444; padding-top:3px; font-weight:bold;">v2.5.0 - Çekirdek</div>
         </div>
     </div>
 
+    <!-- SAHNE -->
     <main id="fabrika-sahasi">
         <div id="sahne">
             <canvas id="cizim-alani" width="3000" height="3000"></canvas>
@@ -31,13 +32,13 @@
         </div>
     </main>
 
-    <!-- DETAY PENCERESİ (MODAL) -->
+    <!-- AKILLI MODAL (Telefonda kolay kapanır, Ek Besleme destekli) -->
     <div id="detay-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
             <h3 id="modal-baslik">Detay Ayarları</h3>
             
-            <label id="modal-etiket">Materyal/Bilgi:</label>
+            <label id="modal-etiket">Ana Bilgi:</label>
             <input type="text" id="modal-input-veri" class="modal-input">
             
             <div id="silo-ozel-bilgiler" style="display: none;">
@@ -46,10 +47,22 @@
                 <label>Teknik Özellikler / Notlar:</label>
                 <textarea id="modal-input-teknik" class="modal-input" rows="2"></textarea>
             </div>
+
+            <!-- EK KONTEYNER / BESLEME ALANI -->
+            <div id="ek-besleme-alani" style="display: none; background: #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                <h4 style="margin: 0 0 5px 0; color: #d35400; font-size:13px;">➕ Ek Besleme (Konteyner/Masterbatch)</h4>
+                <label>Besleme Tipi:</label>
+                <select id="modal-ek-tip" class="modal-input" style="padding:8px;">
+                    <option value="yok">Yok</option>
+                    <option value="merkez">Merkezî (Lacivert)</option>
+                    <option value="lokal">Lokal / Yanında (Açık Mavi)</option>
+                </select>
+                <label>Ek Malzeme Kodu/Tanımı:</label>
+                <input type="text" id="modal-ek-malzeme" class="modal-input">
+            </div>
             
-            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px; margin-top:10px;">
+            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                 <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:14px;">📥 Gelen Malzemeler</h4>
-                <!-- Sil butonlarının ekleneceği dinamik liste -->
                 <ul id="gelen-listesi" style="margin: 0; padding-left: 0; list-style:none; font-size: 13px; color: #444;"></ul>
             </div>
             
@@ -66,7 +79,9 @@
                     <label>Hedef Makina:</label> <input type="text" id="modal-firin-hedef" class="modal-input">
                 </div>
             </div>
+            
             <button id="modal-kaydet" class="kaydet-btn">Kaydet</button>
+            <button id="modal-kapat-alt" class="kapat-alt-btn">Kapat</button>
         </div>
     </div>
 
