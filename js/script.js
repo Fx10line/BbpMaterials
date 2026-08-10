@@ -25,7 +25,7 @@ makinaIsimleri.forEach((isim, index) => {
     makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, ekTip: "yok", ekVeri: "", x: 1100, y: index * 200 + 100 }); 
 });
 
-// --- 2. ZİNCİR VE LED (DURUM) MOTORU ---
+// --- 2. ZİNCİR VE LED MOTORU ---
 function getCihazIsim(idStr) {
     let s = silolar.find(x => x.id_str === idStr); if (s) return s.isim;
     let f = firinlar.find(x => x.id_str === idStr); if (f) return f.isim;
@@ -42,7 +42,6 @@ function baglantiOzetiniOlustur(veri, tip) {
     } 
     else if (tip === "firin" || tip === "makina") {
         let inc = [];
-        // Fırın üzerinden gelenler (Sadece Makina için)
         if (tip === "makina") {
             firinlar.forEach(f => {
                 if (f.hedef && f.hedef.includes(veri.id_str)) {
@@ -51,7 +50,7 @@ function baglantiOzetiniOlustur(veri, tip) {
                         s.kanallar.forEach(k => {
                             if (k && k.includes(f.id_str)) {
                                 siloBulundu = true;
-                                inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <br><span style="color:#ecf0f1;"><b>${s.kod}</b> ${s.materyal}</span>`);
+                                inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`);
                             }
                         })
                     });
@@ -60,36 +59,31 @@ function baglantiOzetiniOlustur(veri, tip) {
             });
         }
         
-        // Doğrudan Silodan gelenler
         silolar.forEach(s => {
             s.kanallar.forEach(k => {
                 if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) {
-                    inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#ecf0f1;"><b>${s.kod}</b> ${s.materyal}</span>`);
+                    inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`);
                 }
             })
         });
 
-        // Ek Besleme (Konteyner)
-        if (veri.ekTip !== "yok" && veri.ekVeri !== "") {
-            inc.push(`➕ Ek: <span style="color:#3498db;">${veri.ekVeri}</span>`);
-        }
+        if (veri.ekTip !== "yok" && veri.ekVeri !== "") { inc.push(`➕ Ek: <span style="color:#2980b9;">${veri.ekVeri}</span>`); }
         
         inc = [...new Set(inc)];
-        html = inc.length > 0 ? `${inc.join('<hr style="margin:4px 0; border-top:1px solid rgba(255,255,255,0.1);">')}` : `<span style='color:#7f8c8d'>📥 Giriş Yok</span>`;
+        html = inc.length > 0 ? `${inc.join('<hr style="margin:4px 0; border-top:1px solid rgba(0,0,0,0.1);">')}` : `<span style='color:#7f8c8d'>📥 Giriş Yok</span>`;
         
         if (tip === "firin") {
             let out = [];
             if (veri.hedef && veri.hedef !== "Boş") veri.hedef.split(',').forEach(h => { let isim = getCihazIsim(h.trim()); if(isim) out.push(`<span class="goto-cihaz" data-target="${h.trim()}">${isim}</span>`); });
-            html += `<hr style="margin:4px 0; border-top:1px solid rgba(255,255,255,0.1);">${out.length > 0 ? `📤 Giden: ${out.join(', ')}` : `<span style='color:#7f8c8d'>📤 Çıkış Yok</span>`}`;
+            html += `<hr style="margin:4px 0; border-top:1px solid rgba(0,0,0,0.1);">${out.length > 0 ? `📤 Giden: ${out.join(', ')}` : `<span style='color:#7f8c8d'>📤 Çıkış Yok</span>`}`;
         }
     }
-    return `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #555; color:#f1c40f; line-height:1.4; font-size:10px;">${html}</div>`;
+    return `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed rgba(0,0,0,0.2); color:#2c3e50; line-height:1.4; font-size:10px;">${html}</div>`;
 }
 
 function durumLambalariniUret(veri, tip) {
     if (tip === "silo") return "";
-    let ledHtml = `<div class="led ${veri.aktif ? 'led-calisma' : ''}" title="Çalışma"></div>`;
-    
+    let ledHtml = "";
     let isSilo = false; let isFirin = false;
     
     if (tip === "firin") {
@@ -106,7 +100,6 @@ function durumLambalariniUret(veri, tip) {
 
     if (isSilo) ledHtml += `<div class="led led-silo" title="Silo Bağlı"></div>`;
     if (isFirin) ledHtml += `<div class="led led-firin" title="Fırın Bağlı"></div>`;
-    
     if (veri.ekTip === "merkez") ledHtml += `<div class="led led-ek-merkez" title="Merkezî Ek Besleme"></div>`;
     if (veri.ekTip === "lokal") ledHtml += `<div class="led led-ek-lokal" title="Lokal Ek Besleme"></div>`;
 
@@ -126,10 +119,13 @@ function olusturHTML(veri, tip, index, ikon) {
     let nodeSol = (tip === "firin" || tip === "makina") ? `<div class="node-in"></div>` : "";
     let nodeSag = (tip === "silo") ? `<div class="silo-nodes"><div class="node-out node-ch1" data-kanal="0"></div><div class="node-out node-ch2" data-kanal="1"></div><div class="node-out node-ch3" data-kanal="2"></div><div class="node-out node-ch4" data-kanal="3"></div></div>` : (tip === "firin" ? `<div class="node-out tekli" data-kanal="0"></div>` : "");
     
+    // YENİ: Kutu aktif ise 'kutu-aktif', değilse 'kutu-kapali' sınıfı ekleniyor
+    let durumClass = veri.aktif ? "kutu-aktif" : "kutu-kapali";
+    
     let bilgi = (tip === "silo") ? `<b>${veri.kod}</b><br><span style="font-size:10px;">${veri.materyal}</span>` : (tip === "firin" ? `Isı: ${veri.sicaklik}` : `Ürün: ${veri.urun}`);
     bilgi += baglantiOzetiniOlustur(veri, tip); 
 
-    return `<div class="kutu" id="${veri.id_str}" data-tip="${tip}" data-index="${index}" style="left: ${veri.x}px; top: ${veri.y}px;">
+    return `<div class="kutu ${durumClass}" id="${veri.id_str}" data-tip="${tip}" data-index="${index}" style="left: ${veri.x}px; top: ${veri.y}px;">
                 ${durumLambalariniUret(veri, tip)}
                 ${nodeSol} ${nodeSag}
                 <div class="kutu-ikon">${ikon}</div>
@@ -157,8 +153,6 @@ function cihazaGit(hedefIdStr) {
 // --- 5. TIKLA-TIKLA BAĞLANTI (TAP-TO-CONNECT) & SÜRÜKLEME ---
 let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 let suruklenenKutu = null; let offset = { x: 0, y: 0 }; let kutuSuruklendiMi = false;
-
-// Tıkla-Tıkla Değişkenleri
 let bekleyenCikisNoktasi = null;
 
 function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
@@ -176,26 +170,18 @@ function handleStart(e) {
     if (e.target.closest('#kontrol-paneli') || e.target.closest('.modal')) return;
     const t = e.target;
     
-    // Tıkla-Tıkla Bağlantı Mantığı (Eğer çıkış noduna tıklandıysa)
     if (t.classList.contains('node-out')) {
         e.preventDefault();
         if (bekleyenCikisNoktasi) bekleyenCikisNoktasi.classList.remove('node-secili');
-        bekleyenCikisNoktasi = t;
-        bekleyenCikisNoktasi.classList.add('node-secili');
-        return;
+        bekleyenCikisNoktasi = t; bekleyenCikisNoktasi.classList.add('node-secili'); return;
     }
     
-    // Eğer giriş noduna tıklandıysa ve bekleyen bağlantı varsa
     if (t.classList.contains('node-in') && bekleyenCikisNoktasi) {
-        let kaynakKutu = bekleyenCikisNoktasi.closest('.kutu');
-        let kanalIndex = bekleyenCikisNoktasi.dataset.kanal || 0;
-        let hedefKutu = t.closest('.kutu');
+        let kaynakKutu = bekleyenCikisNoktasi.closest('.kutu'); let kanalIndex = bekleyenCikisNoktasi.dataset.kanal || 0; let hedefKutu = t.closest('.kutu');
         if (kaynakKutu.id !== hedefKutu.id) { baglantiEkle(kaynakKutu, kanalIndex, hedefKutu.id); }
-        bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null;
-        ekranlariCiz(); return;
+        bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null; ekranlariCiz(); return;
     }
 
-    // Boşluğa tıklanırsa bekleyen bağlantıyı iptal et
     if (bekleyenCikisNoktasi && !t.classList.contains('node-out') && !t.classList.contains('node-in')) {
         bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null;
     }
@@ -221,8 +207,7 @@ function handleMove(e) {
         panX = pos.x - baslangicPanX; panY = pos.y - baslangicPanY;
         sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
     } else if (suruklenenKutu) {
-        kutuSuruklendiMi = true;
-        let rect = sahne.getBoundingClientRect();
+        kutuSuruklendiMi = true; let rect = sahne.getBoundingClientRect();
         suruklenenKutu.style.left = ((pos.x - rect.left) / scale - offset.x) + 'px';
         suruklenenKutu.style.top = ((pos.y - rect.top) / scale - offset.y) + 'px';
     }
