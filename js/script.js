@@ -1,4 +1,4 @@
-// --- 1. VERİ TABANI VE LOCALSTORAGE YÜKLEME ---
+// --- 1. VERİ TABANI VE GÜVENLİ HAFIZA YÜKLEME ---
 const siloHamVeri = [
     { isim: "Silo 1", materyal: "EDISTIR R 321P BULK CM P938", kod: "0002.01B" }, { isim: "Silo 2", materyal: "Mafill CR CT 5344H PPTV20 Rez.", kod: "0128.90B" },
     { isim: "Silo 3", materyal: "Scolefin CF 4002 black 225230", kod: "0208.45" }, { isim: "Silo 4", materyal: "Pentamid AB GV10 MC20 H2 RC1 tiefsch.", kod: "0497.90" },
@@ -11,19 +11,29 @@ const siloHamVeri = [
 
 let silolar = []; 
 let kaydedilmisSilolar = localStorage.getItem('bbp_silolar');
-if (kaydedilmisSilolar) { silolar = JSON.parse(kaydedilmisSilolar); } 
-else { siloHamVeri.forEach((s, i) => { silolar.push({ id_str: `silo_${i+1}`, isim: s.isim, materyal: s.materyal, kod: s.kod, teknik: "", aktif: true, kanallar: ["Boş", "Boş", "Boş", "Boş"], x: 100, y: i * 200 + 100 }); }); }
+if (kaydedilmisSilolar) { 
+    // Hata Çözümü: Eski verileri yeni özelliklerle harmanla
+    silolar = JSON.parse(kaydedilmisSilolar).map(s => ({ kanallar: ["Boş","Boş","Boş","Boş"], ...s })); 
+} else { 
+    siloHamVeri.forEach((s, i) => { silolar.push({ id_str: `silo_${i+1}`, isim: s.isim, materyal: s.materyal, kod: s.kod, teknik: "", aktif: true, kanallar: ["Boş", "Boş", "Boş", "Boş"], x: 100, y: i * 200 + 100 }); }); 
+}
 
 let firinlar = [];
 let kaydedilmisFirinlar = localStorage.getItem('bbp_firinlar');
-if (kaydedilmisFirinlar) { firinlar = JSON.parse(kaydedilmisFirinlar); } 
-else { for (let i = 1; i <= 16; i++) { firinlar.push({ id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true, hedef: "Boş", ekTip: "yok", ekVeri: "", x: 600, y: (i-1) * 200 + 100 }); } }
+if (kaydedilmisFirinlar) { 
+    firinlar = JSON.parse(kaydedilmisFirinlar).map(f => ({ ekTip: "yok", ekVeri: "", ...f })); 
+} else { 
+    for (let i = 1; i <= 16; i++) { firinlar.push({ id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true, hedef: "Boş", ekTip: "yok", ekVeri: "", x: 600, y: (i-1) * 200 + 100 }); } 
+}
 
 const makinaIsimleri = ["400-2", "400-3", "500-9", "600-4", "600-7", "650-2", "650-8", "800-1", "800-4", "850-2", "850-3", "850-4", "900-1", "1000-3", "1000-4", "1100-1", "1450-1", "1600-3", "1700-2", "1700-3"];
 let makinalar = [];
 let kaydedilmisMakinalar = localStorage.getItem('bbp_makinalar');
-if (kaydedilmisMakinalar) { makinalar = JSON.parse(kaydedilmisMakinalar); } 
-else { makinaIsimleri.forEach((isim, index) => { makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, ekTip: "yok", ekVeri: "", x: 1100, y: index * 200 + 100 }); }); }
+if (kaydedilmisMakinalar) { 
+    makinalar = JSON.parse(kaydedilmisMakinalar).map(m => ({ ekTip: "yok", ekVeri: "", ...m })); 
+} else { 
+    makinaIsimleri.forEach((isim, index) => { makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, ekTip: "yok", ekVeri: "", x: 1100, y: index * 200 + 100 }); }); 
+}
 
 function verileriKaydet() {
     localStorage.setItem('bbp_silolar', JSON.stringify(silolar));
@@ -33,15 +43,6 @@ function verileriKaydet() {
 
 // KİLİT MEKANİZMASI
 let konumlarKilitli = false;
-const btnKilitle = document.getElementById('btn-kilitle');
-btnKilitle.onclick = function() {
-    konumlarKilitli = !konumlarKilitli;
-    if (konumlarKilitli) {
-        this.className = "kilit-kapali"; this.innerText = "🔒 Konumlar Kilitli";
-    } else {
-        this.className = "kilit-acik"; this.innerText = "🔓 Konumlar Serbest";
-    }
-};
 
 // --- 2. ZİNCİR VE LED MOTORU ---
 function getCihazIsim(idStr) {
@@ -70,6 +71,7 @@ function baglantiOzetiniOlustur(veri, tip) {
             });
         }
         silolar.forEach(s => { s.kanallar.forEach(k => { if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) { inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`); } }) });
+        
         if (veri.ekTip !== "yok" && veri.ekVeri !== "") { inc.push(`➕ Ek: <span style="color:#2980b9;">${veri.ekVeri}</span>`); }
         
         inc = [...new Set(inc)];
@@ -144,12 +146,12 @@ function cihazaGit(hedefIdStr) {
 }
 
 
-// --- 5. TIKLA-TIKLA BAĞLANTI & AKILLI SÜRÜKLEME MOTORU ---
+// --- 5. KUSURSUZ AKILLI SÜRÜKLEME MOTORU (BUG FİX EDİLDİ) ---
 let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 let suruklenenKutu = null; let offset = { x: 0, y: 0 }; 
 let bekleyenCikisNoktasi = null;
 let startX = 0, startY = 0; 
-let suruklemeYapildi = false; // "5 Piksel Sınırı" için akıllı değişken
+let suruklemeYapildi = false; 
 
 function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
     const tip = kaynakKutu.dataset.tip; const idx = parseInt(kaynakKutu.dataset.index);
@@ -167,32 +169,28 @@ function handleStart(e) {
     if (e.target.closest('#kontrol-paneli') || e.target.closest('.modal')) return;
     const t = e.target;
     
-    // Tıkla-Tıkla: Çıkış Seçimi
     if (t.classList.contains('node-out')) {
         e.preventDefault();
         if (bekleyenCikisNoktasi) bekleyenCikisNoktasi.classList.remove('node-secili');
         bekleyenCikisNoktasi = t; bekleyenCikisNoktasi.classList.add('node-secili'); return;
     }
     
-    // Tıkla-Tıkla: Giriş Bağlama
     if (t.classList.contains('node-in') && bekleyenCikisNoktasi) {
         let kaynakKutu = bekleyenCikisNoktasi.closest('.kutu'); let kanalIndex = bekleyenCikisNoktasi.dataset.kanal || 0; let hedefKutu = t.closest('.kutu');
         if (kaynakKutu.id !== hedefKutu.id) { baglantiEkle(kaynakKutu, kanalIndex, hedefKutu.id); }
         bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null; ekranlariCiz(); return;
     }
 
-    // Tıkla-Tıkla İptali (Boşluğa basınca)
     if (bekleyenCikisNoktasi && !t.classList.contains('node-out') && !t.classList.contains('node-in')) {
         bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null;
     }
 
     const pos = e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
     startX = pos.x; startY = pos.y;
-    suruklemeYapildi = false; // Her dokunuşta sıfırla
+    suruklemeYapildi = false; 
 
     const kutu = t.closest('.kutu');
     
-    // EĞER KİLİT AÇIKSA KUTU SÜRÜKLE, KİLİTLİYSE YA DA BOŞLUĞA BASILDIYSA EKRANI KAYDIR (PAN)
     if (kutu && !t.matches('button') && !t.classList.contains('goto-cihaz') && !konumlarKilitli) {
         suruklenenKutu = kutu; 
         offset.x = (pos.x - kutu.getBoundingClientRect().left) / scale; 
@@ -208,15 +206,16 @@ function handleStart(e) {
 function handleMove(e) {
     if(!isPanning && !suruklenenKutu) return;
     
+    // YENİ: Telefonun kendi aşağı-yukarı kaydırma çabasını burada tamamen donduruyoruz ki harita kilitlenmesin!
+    if (e.cancelable) e.preventDefault(); 
+    
     const pos = e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
     
-    // 5 PİKSEL KURALI: Parmağın titremesi ile bilerek kaydırmayı ayırt et
     if (Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5) {
         suruklemeYapildi = true; 
     }
     
-    if (!suruklemeYapildi) return; // 5 pikselden azsa ekranı hareket ettirme
-    e.preventDefault(); 
+    if (!suruklemeYapildi) return;
     
     if (isPanning) {
         panX = pos.x - baslangicPanX; panY = pos.y - baslangicPanY;
@@ -240,8 +239,7 @@ function handleEnd(e) {
         verileriKaydet();
         suruklenenKutu = null; 
     }
-    // Sürükleme değişkenini pencere (modal) fırlamasını önlemek için hemen kapatmıyoruz, click eventi okuduktan sonra kapatıyoruz.
-    setTimeout(() => { suruklemeYapildi = false; }, 100);
+    setTimeout(() => { suruklemeYapildi = false; }, 50);
 }
 
 document.addEventListener('mousedown', handleStart, {passive: false});
@@ -301,7 +299,6 @@ document.addEventListener('click', (e) => {
 
     const kutu = t.closest('.kutu');
     
-    // AKILLI TIKLAMA KONTROLÜ: Kutuya tıklanmışsa VE Sürükleme/Kaydırma yapılmamışsa pencereyi aç!
     if (kutu && !t.matches('button') && !suruklemeYapildi) {
         const tip = kutu.dataset.tip; const seciliIndex = parseInt(kutu.dataset.index);
         
@@ -351,4 +348,17 @@ document.addEventListener('click', (e) => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", () => { ekranlariCiz(); animasyonDongusu(); });
+// HTML Yüklendiğinde Buton Tıklamasını Güvenle Tanımla
+document.addEventListener("DOMContentLoaded", () => { 
+    ekranlariCiz(); 
+    animasyonDongusu(); 
+    const btnKilitle = document.getElementById('btn-kilitle');
+    btnKilitle.onclick = function() {
+        konumlarKilitli = !konumlarKilitli;
+        if (konumlarKilitli) {
+            this.className = "kilit-kapali"; this.innerText = "🔒 Konumlar Kilitli";
+        } else {
+            this.className = "kilit-acik"; this.innerText = "🔓 Konumlar Serbest";
+        }
+    };
+});
