@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BBP Kunststoffwerk - SCADA v2.5.0 Çekirdek</title>
+    <title>BBP Kunststoffwerk - SCADA v2.5.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -17,10 +17,12 @@
                 <span id="zoom-seviyesi">100%</span>
                 <button id="btn-zoom-in">+</button>
             </div>
-            <p style="font-size:10px; color:#aaa; margin:8px 0 0 0; text-align:center;">
-                Bağlamak için: Çıkışa tıkla, hedefe tıkla. Silmek için X kullanın.
+            <!-- YENİ: KONUM KİLİT DÜĞMESİ -->
+            <button id="btn-kilitle" class="kilit-acik">🔓 Konumlar Serbest</button>
+            <p style="font-size:10px; color:#aaa; margin:6px 0 0 0; text-align:center;">
+                Bağlamak için çıkışa, sonra girişe tıkla.
             </p>
-            <div style="font-size:9px; color:#666; text-align:center; margin-top:5px; border-top:1px solid #444; padding-top:3px; font-weight:bold;">v2.5.0 - Çekirdek</div>
+            <div style="font-size:9px; color:#666; text-align:center; margin-top:4px; border-top:1px solid #444; padding-top:2px; font-weight:bold;">v2.5.0 - Kalıcı Hafıza</div>
         </div>
     </div>
 
@@ -32,7 +34,7 @@
         </div>
     </main>
 
-    <!-- AKILLI MODAL (Telefonda kolay kapanır, Ek Besleme destekli) -->
+    <!-- AKILLI MODAL -->
     <div id="detay-modal" class="modal" style="display: none;">
         <div class="modal-icerik">
             <span class="kapat-btn" id="modal-kapat">&times;</span>
@@ -48,7 +50,6 @@
                 <textarea id="modal-input-teknik" class="modal-input" rows="2"></textarea>
             </div>
 
-            <!-- EK KONTEYNER / BESLEME ALANI -->
             <div id="ek-besleme-alani" style="display: none; background: #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                 <h4 style="margin: 0 0 5px 0; color: #d35400; font-size:13px;">➕ Ek Besleme (Konteyner/Masterbatch)</h4>
                 <label>Besleme Tipi:</label>
