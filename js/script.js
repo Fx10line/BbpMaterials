@@ -22,10 +22,29 @@ else { for (let i = 1; i <= 16; i++) { firinlar.push({ id_str: `firin_${i}`, isi
 const makinaIsimleri = ["400-2", "400-3", "500-9", "600-4", "600-7", "650-2", "650-8", "800-1", "800-4", "850-2", "850-3", "850-4", "900-1", "1000-3", "1000-4", "1100-1", "1450-1", "1600-3", "1700-2", "1700-3"];
 let makinalar = [];
 let kaydedilmisMakinalar = localStorage.getItem('bbp_makinalar');
-if (kaydedilmisMakinalar) { makinalar = JSON.parse(kaydedilmisMakinalar).map(m => ({ ekTip: "yok", ekVeri: "", ...m })); } 
-else { makinaIsimleri.forEach((isim, index) => { makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, ekTip: "yok", ekVeri: "", x: 1100, y: index * 200 + 100 }); }); }
+if (kaydedilmisMakinalar) { 
+    // Eski tekli hafızayı, yeni 3'lü dizi formatına dönüştüren (Migrasyon) Kodu
+    makinalar = JSON.parse(kaydedilmisMakinalar).map(m => {
+        if (!m.ekler) {
+            m.ekler = [
+                { tip: m.ekTip || "yok", veri: m.ekVeri || "", x: m.ekX || null, y: m.ekY || null },
+                { tip: "yok", veri: "", x: null, y: null },
+                { tip: "yok", veri: "", x: null, y: null }
+            ];
+        }
+        return m;
+    }); 
+} 
+else { 
+    makinaIsimleri.forEach((isim, index) => { 
+        makinalar.push({ 
+            id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, 
+            ekler: [{tip:"yok", veri:""}, {tip:"yok", veri:""}, {tip:"yok", veri:""}], 
+            x: 1100, y: index * 200 + 100 
+        }); 
+    }); 
+}
 
-// YENİ: AKILLI REÇETE BELLEĞİ
 let receteler = JSON.parse(localStorage.getItem('bbp_receteler')) || {};
 
 function verileriKaydet() {
@@ -65,6 +84,15 @@ function baglantiOzetiniOlustur(veri, tip) {
         }
         silolar.forEach(s => { s.kanallar.forEach(k => { if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) { inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`); } }) });
         
+        // YENİ: ÇOKLU EK MATERYAL ÖZETİ
+        if (tip === "firin") {
+            if (veri.ekTip && veri.ekTip !== "yok" && veri.ekVeri !== "") { inc.push(`➕ Ek: <span style="color:#2980b9;">${veri.ekVeri}</span>`); }
+        } else if (tip === "makina" && veri.ekler) {
+            veri.ekler.forEach((ek, idx) => {
+                if (ek.tip && ek.tip !== "yok" && ek.veri !== "") { inc.push(`➕ Ek ${idx+1}: <span style="color:#2980b9;">${ek.veri}</span>`); }
+            });
+        }
+        
         inc = [...new Set(inc)];
         html = inc.length > 0 ? `${inc.join('<hr style="margin:4px 0; border-top:1px solid rgba(0,0,0,0.1);">')}` : `<span style='color:#7f8c8d'>📥 Giriş Yok</span>`;
         
@@ -89,13 +117,20 @@ function durumLambalariniUret(veri, tip) {
 
     if (isSilo) ledHtml += `<div class="led led-silo" title="Silo Bağlı"></div>`;
     if (isFirin) ledHtml += `<div class="led led-firin" title="Fırın Bağlı"></div>`;
-    if (veri.ekTip === "merkez") ledHtml += `<div class="led led-ek-merkez" title="Merkezî Ek Besleme"></div>`;
-    if (veri.ekTip === "lokal") ledHtml += `<div class="led led-ek-lokal" title="Lokal Ek Besleme"></div>`;
+    
+    // YENİ: ÇOKLU KONTEYNER LED KONTROLÜ
+    if (tip === "firin") {
+        if (veri.ekTip === "merkez") ledHtml += `<div class="led led-ek-merkez" title="Merkezî Ek Besleme"></div>`;
+        if (veri.ekTip === "lokal") ledHtml += `<div class="led led-ek-lokal" title="Lokal Ek Besleme"></div>`;
+    } else if (tip === "makina" && veri.ekler) {
+        if (veri.ekler.some(e => e.tip === "merkez")) ledHtml += `<div class="led led-ek-merkez" title="Merkezî Ek Besleme"></div>`;
+        if (veri.ekler.some(e => e.tip === "lokal")) ledHtml += `<div class="led led-ek-lokal" title="Lokal Ek Besleme"></div>`;
+    }
 
     return `<div class="durum-paneli">${ledHtml}</div>`;
 }
 
-// --- 3. HTML OLUŞTURMA & SEYYAR KONTEYNER MOTORU ---
+// --- 3. HTML OLUŞTURMA & ÇOKLU SEYYAR KONTEYNER MOTORU ---
 function ekranlariCiz() {
     const kapsayici = document.getElementById('cihazlar-kapsayici'); let html = "";
     silolar.forEach((s, i) => { html += olusturHTML(s, "silo", i, "🛢️"); });
@@ -136,18 +171,31 @@ function olusturHTML(veri, tip, index, ikon) {
                 <div class="guc-dugmeleri"><button class="btn-toggle ${veri.aktif ? 'btn-on' : 'btn-off'}">${veri.aktif ? 'AÇIK' : 'KAPALI'}</button></div>
             </div>`;
 
-    // YENİ: FİZİKSEL SEYYAR KONTEYNER OLUŞTURMA
+    // YENİ: ÇOKLU FİZİKSEL SEYYAR KONTEYNER OLUŞTURMA
     let konteynerHtml = "";
-    if ((tip === "firin" || tip === "makina") && veri.ekTip && veri.ekTip !== "yok") {
-        veri.ekX = veri.ekX || (veri.x - 120);
-        veri.ekY = veri.ekY || (veri.y + 40);
+    if (tip === "firin" && veri.ekTip && veri.ekTip !== "yok") {
+        veri.ekX = veri.ekX || (veri.x - 120); veri.ekY = veri.ekY || (veri.y + 40);
         let renk = veri.ekTip === "merkez" ? "#1b1464" : "#00a8ff";
         let baslik = veri.ekTip === "merkez" ? "Merkezî Hat" : "Seyyar Varil";
-        konteynerHtml = `<div class="kutu seyyar-konteyner" id="kont_${veri.id_str}" data-tip="konteyner" data-parent="${veri.id_str}" data-parenttip="${tip}" style="left: ${veri.ekX}px; top: ${veri.ekY}px; border-color:${renk};">
+        konteynerHtml += `<div class="kutu seyyar-konteyner" id="kont_${veri.id_str}_0" data-tip="konteyner" data-parent="${veri.id_str}" data-parenttip="${tip}" data-ekindex="0" style="left: ${veri.ekX}px; top: ${veri.ekY}px; border-color:${renk};">
             <div class="node-out tekli" style="background:${renk}; right:-12px; width:24px; height:24px; margin-top:-12px;"></div>
             <div class="seyyar-ikon">🛢️</div>
             <b style="font-size:11px;">${baslik}</b><br><span style="font-size:9px;">${veri.ekVeri}</span>
         </div>`;
+    } else if (tip === "makina" && veri.ekler) {
+        veri.ekler.forEach((ek, i) => {
+            if (ek.tip && ek.tip !== "yok") {
+                ek.x = ek.x || (veri.x - 120);
+                ek.y = ek.y || (veri.y + 10 + (i * 75)); // Variller üst üste binmesin diye y ekseninde kaydırma
+                let renk = ek.tip === "merkez" ? "#1b1464" : "#00a8ff";
+                let baslik = ek.tip === "merkez" ? "Merkezî Hat" : `Varil ${i+1}`;
+                konteynerHtml += `<div class="kutu seyyar-konteyner" id="kont_${veri.id_str}_${i}" data-tip="konteyner" data-parent="${veri.id_str}" data-parenttip="${tip}" data-ekindex="${i}" style="left: ${ek.x}px; top: ${ek.y}px; border-color:${renk};">
+                    <div class="node-out tekli" style="background:${renk}; right:-12px; width:24px; height:24px; margin-top:-12px;"></div>
+                    <div class="seyyar-ikon">🛢️</div>
+                    <b style="font-size:11px;">${baslik}</b><br><span style="font-size:9px;">${ek.veri}</span>
+                </div>`;
+            }
+        });
     }
 
     return anaKutuHtml + konteynerHtml;
@@ -172,10 +220,9 @@ function cihazaGit(hedefIdStr) {
 // --- 5. TIKLA-TIKLA BAĞLANTI & AKILLI KORUMALAR ---
 let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 let suruklenenKutu = null; let offset = { x: 0, y: 0 }; 
-let bekleyenCikisNoktasi = null;
-let startX = 0, startY = 0; let suruklemeYapildi = false; 
+let bekleyenCikisNoktasi = null; let startX = 0, startY = 0; let suruklemeYapildi = false; 
 
-// YENİ: MİKRO-DENETİM (AUDIT) MOTORU
+// MİKRO-DENETİM (AUDIT) MOTORU
 let auditBekleyenSiloId = null;
 function tetikleAudit(siloId) {
     let s = silolar.find(x => x.id_str === siloId);
@@ -193,23 +240,13 @@ document.getElementById('btn-audit-hayir').onclick = () => {
 
 function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
     const tip = kaynakKutu.dataset.tip; const idx = parseInt(kaynakKutu.dataset.index);
-    
-    // YENİ: FIRIN TEKİL GİRİŞ KORUMASI (INTERLOCK)
     if (hedefIdStr.startsWith('firin')) {
-        silolar.forEach(s => {
-            s.kanallar.forEach((k, kIdx) => {
-                if (k && k.includes(hedefIdStr)) {
-                    let arr = k.split(',').map(x=>x.trim()).filter(x => x !== hedefIdStr);
-                    s.kanallar[kIdx] = arr.length > 0 ? arr.join(', ') : "Boş";
-                }
-            });
-        });
+        silolar.forEach(s => { s.kanallar.forEach((k, kIdx) => { if (k && k.includes(hedefIdStr)) { let arr = k.split(',').map(x=>x.trim()).filter(x => x !== hedefIdStr); s.kanallar[kIdx] = arr.length > 0 ? arr.join(', ') : "Boş"; } }); });
     }
 
     if (tip === "silo") {
         let m = silolar[idx].kanallar[kanalIndex];
         silolar[idx].kanallar[kanalIndex] = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
-        // %25 İhtimalle Audit Tetikle
         if (Math.random() < 0.25) tetikleAudit(silolar[idx].id_str);
     } else if (tip === "firin") {
         let m = firinlar[idx].hedef;
@@ -239,7 +276,6 @@ function handleStart(e) {
     startX = pos.x; startY = pos.y; suruklemeYapildi = false; 
 
     const kutu = t.closest('.kutu');
-    
     if (kutu && !t.matches('button') && !t.classList.contains('goto-cihaz') && !t.classList.contains('silo-ana-node') && !konumlarKilitli) {
         suruklenenKutu = kutu; 
         offset.x = (pos.x - kutu.getBoundingClientRect().left) / scale; 
@@ -256,7 +292,6 @@ function handleMove(e) {
     
     const pos = e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
     if (Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5) suruklemeYapildi = true; 
-    
     if (!suruklemeYapildi) return;
     
     if (isPanning) {
@@ -275,11 +310,12 @@ function handleEnd(e) {
         suruklenenKutu.style.zIndex = "";
         const yX = parseInt(suruklenenKutu.style.left); const yY = parseInt(suruklenenKutu.style.top);
         
-        // YENİ: Seyyar Konteyner Hafızası Kaydı
+        // YENİ: ÇOKLU SEYYAR KONTEYNER HAFIZASI KAYDI
         if (suruklenenKutu.dataset.tip === "konteyner") {
             const pId = suruklenenKutu.dataset.parent; const pTip = suruklenenKutu.dataset.parenttip;
+            const ekIdx = parseInt(suruklenenKutu.dataset.ekindex) || 0;
             if (pTip === "firin") { let f = firinlar.find(x => x.id_str === pId); if(f) { f.ekX = yX; f.ekY = yY; } } 
-            else { let m = makinalar.find(x => x.id_str === pId); if(m) { m.ekX = yX; m.ekY = yY; } }
+            else { let m = makinalar.find(x => x.id_str === pId); if(m && m.ekler) { m.ekler[ekIdx].x = yX; m.ekler[ekIdx].y = yY; } }
         } else {
             const idx = parseInt(suruklenenKutu.dataset.index);
             if (suruklenenKutu.dataset.tip === "silo") { silolar[idx].x = yX; silolar[idx].y = yY; } 
@@ -299,7 +335,7 @@ document.addEventListener('touchmove', handleMove, {passive: false});
 document.addEventListener('touchend', handleEnd);
 
 
-// --- 6. CANVAS ÇİZİMİ (SEYYYAR KONTEYNER DESTEKLİ) ---
+// --- 6. CANVAS ÇİZİMİ (ÇOKLU KONTEYNER DESTEKLİ) ---
 const canvas = document.getElementById('cizim-alani'); const ctx = canvas.getContext('2d'); let dashOffset = 0;
 const kanalRenkleri = ["#f1c40f", "#3498db", "#e74c3c", "#bdc3c7"]; 
 
@@ -332,10 +368,15 @@ function animasyonDongusu() {
     silolar.forEach(s => { s.kanallar.forEach((kanal, kIdx) => { if (kanal && kanal !== "Boş") kanal.split(',').forEach(hId => cizgiCiz(s.id_str, hId.trim(), kanalRenkleri[kIdx], s.aktif, kIdx)); }); });
     firinlar.forEach(f => { 
         if (f.hedef && f.hedef !== "Boş") f.hedef.split(',').forEach(hId => cizgiCiz(f.id_str, hId.trim(), "#e67e22", f.aktif, 0)); 
-        if (f.ekTip && f.ekTip !== "yok") cizgiCiz(`kont_${f.id_str}`, f.id_str, f.ekTip==="merkez"?"#1b1464":"#00a8ff", f.aktif, 0, true);
+        if (f.ekTip && f.ekTip !== "yok") cizgiCiz(`kont_${f.id_str}_0`, f.id_str, f.ekTip==="merkez"?"#1b1464":"#00a8ff", f.aktif, 0, true);
     });
+    // YENİ: Makinaların çoklu konteyner çizgileri
     makinalar.forEach(m => {
-        if (m.ekTip && m.ekTip !== "yok") cizgiCiz(`kont_${m.id_str}`, m.id_str, m.ekTip==="merkez"?"#1b1464":"#00a8ff", m.aktif, 0, true);
+        if(m.ekler) {
+            m.ekler.forEach((ek, i) => {
+                if (ek.tip && ek.tip !== "yok") cizgiCiz(`kont_${m.id_str}_${i}`, m.id_str, ek.tip==="merkez"?"#1b1464":"#00a8ff", m.aktif, 0, true);
+            });
+        }
     });
     requestAnimationFrame(animasyonDongusu); 
 }
@@ -362,21 +403,24 @@ document.addEventListener('click', (e) => {
 
     if (t.classList.contains('silo-ana-node')) { t.nextElementSibling.classList.toggle('acik'); return; }
 
-    // Reçete Yükleme İşlemi
+    // REÇETE YÜKLEME (ÇOKLU KONTEYNER DESTEKLİ)
     if (t.id === "btn-recete-yukle") {
         let seciliUrun = document.getElementById('modal-recete-secici').value;
         if(seciliUrun && receteler[seciliUrun]) {
             let r = receteler[seciliUrun];
             document.getElementById('modal-input-veri').value = seciliUrun;
-            document.getElementById('modal-ek-tip').value = r.ekTip;
-            document.getElementById('modal-ek-malzeme').value = r.ekVeri;
+            
+            // Eğer eski formattaysa (ekTip) yeni formata (ekler) çevir, yoksa direkt oku
+            let rEkler = r.ekler || [{tip: r.ekTip || "yok", veri: r.ekVeri || ""}, {tip:"yok", veri:""}, {tip:"yok", veri:""}];
+            
+            document.getElementById('modal-ek-tip-1').value = rEkler[0].tip; document.getElementById('modal-ek-malzeme-1').value = rEkler[0].veri;
+            document.getElementById('modal-ek-tip-2').value = rEkler[1].tip; document.getElementById('modal-ek-malzeme-2').value = rEkler[1].veri;
+            document.getElementById('modal-ek-tip-3').value = rEkler[2].tip; document.getElementById('modal-ek-malzeme-3').value = rEkler[2].veri;
             
             let mId = document.getElementById('modal-kaydet').dataset.hedefid;
-            // Eski makina kablolarını sök
             silolar.forEach(s => s.kanallar.forEach((k,i) => { if(k && k.includes(mId)) s.kanallar[i] = k.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; }));
             firinlar.forEach(f => { if(f.hedef && f.hedef.includes(mId)) f.hedef = f.hedef.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; });
 
-            // Reçetedeki kabloları çek
             r.firinlar.forEach(fId => { let f = firinlar.find(x=>x.id_str===fId); if(f) f.hedef = (f.hedef==="Boş"||f.hedef==="") ? mId : f.hedef + ", " + mId; });
             r.silolar.forEach(sId => { let s = silolar.find(x=>x.id_str===sId); if(s) { let ch = s.kanallar.findIndex(x=>x==="Boş"||x===""); if(ch===-1)ch=0; s.kanallar[ch] = (s.kanallar[ch]==="Boş"||s.kanallar[ch]==="")?mId:s.kanallar[ch]+", "+mId; } });
             
@@ -415,22 +459,33 @@ document.addEventListener('click', (e) => {
         document.getElementById('silo-ozel-bilgiler').style.display = "none"; document.getElementById('ek-besleme-alani').style.display = "none";
         document.getElementById('makina-recete-alani').style.display = "none";
         
-        document.getElementById('modal-kaydet').dataset.hedefid = kutu.id; // Reçete butonu için hedef id
+        document.getElementById('modal-kaydet').dataset.hedefid = kutu.id; 
 
         if (tip === "silo") {
             document.getElementById('modal-baslik').innerText = silolar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Materyal Açıklaması:"; document.getElementById('modal-input-veri').value = silolar[seciliIndex].materyal;
             document.getElementById('silo-ozel-bilgiler').style.display = "block"; document.getElementById('modal-input-kod').value = silolar[seciliIndex].kod; document.getElementById('modal-input-teknik').value = silolar[seciliIndex].teknik;
             document.getElementById('silo-kanallari-inputlari').style.display = "block";
             for(let i=1; i<=4; i++) document.getElementById(`modal-kanal-${i}`).innerHTML = hedefCheckboxUret(silolar[seciliIndex].kanallar[i-1]);
-        } else if (tip === "firin") {
+        } 
+        else if (tip === "firin") {
             document.getElementById('modal-baslik').innerText = firinlar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Fırın Sıcaklığı:"; document.getElementById('modal-input-veri').value = firinlar[seciliIndex].sicaklik;
             document.getElementById('firin-hedef-inputu').style.display = "block"; document.getElementById('modal-firin-hedef').innerHTML = hedefCheckboxUret(firinlar[seciliIndex].hedef);
-            document.getElementById('ek-besleme-alani').style.display = "block"; document.getElementById('modal-ek-tip').value = firinlar[seciliIndex].ekTip; document.getElementById('modal-ek-malzeme').value = firinlar[seciliIndex].ekVeri;
-        } else {
-            document.getElementById('modal-baslik').innerText = makinalar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Üretilen Ürün:"; document.getElementById('modal-input-veri').value = makinalar[seciliIndex].urun;
-            document.getElementById('ek-besleme-alani').style.display = "block"; document.getElementById('modal-ek-tip').value = makinalar[seciliIndex].ekTip; document.getElementById('modal-ek-malzeme').value = makinalar[seciliIndex].ekVeri;
             
-            // Reçete Alanını Yükle
+            document.getElementById('ek-besleme-alani').style.display = "block";
+            document.getElementById('ek-slot-2').style.display = "none"; document.getElementById('ek-slot-3').style.display = "none"; // Fırında sadece 1 slot
+            document.getElementById('modal-ek-tip-1').value = firinlar[seciliIndex].ekTip; document.getElementById('modal-ek-malzeme-1').value = firinlar[seciliIndex].ekVeri;
+        } 
+        else {
+            document.getElementById('modal-baslik').innerText = makinalar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Üretilen Ürün:"; document.getElementById('modal-input-veri').value = makinalar[seciliIndex].urun;
+            
+            document.getElementById('ek-besleme-alani').style.display = "block";
+            document.getElementById('ek-slot-2').style.display = "block"; document.getElementById('ek-slot-3').style.display = "block"; // Makinada 3 slot aktif
+            
+            let mEkler = makinalar[seciliIndex].ekler;
+            document.getElementById('modal-ek-tip-1').value = mEkler[0].tip; document.getElementById('modal-ek-malzeme-1').value = mEkler[0].veri;
+            document.getElementById('modal-ek-tip-2').value = mEkler[1].tip; document.getElementById('modal-ek-malzeme-2').value = mEkler[1].veri;
+            document.getElementById('modal-ek-tip-3').value = mEkler[2].tip; document.getElementById('modal-ek-malzeme-3').value = mEkler[2].veri;
+            
             document.getElementById('makina-recete-alani').style.display = "block";
             let rHtml = `<option value="">-- Hafızadaki Reçeteler --</option>`;
             Object.keys(receteler).forEach(k => { rHtml += `<option value="${k}">${k}</option>`; });
@@ -451,17 +506,21 @@ document.addEventListener('click', (e) => {
                 firinlar[seciliIndex].sicaklik = veri; 
                 let secili = []; document.querySelectorAll(`#modal-firin-hedef input:checked`).forEach(el => secili.push(el.value));
                 firinlar[seciliIndex].hedef = secili.length > 0 ? secili.join(', ') : "Boş";
-                firinlar[seciliIndex].ekTip = document.getElementById('modal-ek-tip').value; firinlar[seciliIndex].ekVeri = document.getElementById('modal-ek-malzeme').value;
+                firinlar[seciliIndex].ekTip = document.getElementById('modal-ek-tip-1').value; firinlar[seciliIndex].ekVeri = document.getElementById('modal-ek-malzeme-1').value;
             } else { 
                 makinalar[seciliIndex].urun = veri; 
-                makinalar[seciliIndex].ekTip = document.getElementById('modal-ek-tip').value; makinalar[seciliIndex].ekVeri = document.getElementById('modal-ek-malzeme').value;
+                makinalar[seciliIndex].ekler[0].tip = document.getElementById('modal-ek-tip-1').value; makinalar[seciliIndex].ekler[0].veri = document.getElementById('modal-ek-malzeme-1').value;
+                makinalar[seciliIndex].ekler[1].tip = document.getElementById('modal-ek-tip-2').value; makinalar[seciliIndex].ekler[1].veri = document.getElementById('modal-ek-malzeme-2').value;
+                makinalar[seciliIndex].ekler[2].tip = document.getElementById('modal-ek-tip-3').value; makinalar[seciliIndex].ekler[2].veri = document.getElementById('modal-ek-malzeme-3').value;
                 
-                // YENİ: Makina kaydedilirken REÇETE HAFIZASINI ÖĞREN
                 if (veri && veri.trim() !== "" && veri !== "Belirlenmedi") {
                     let mId = makinalar[seciliIndex].id_str;
                     let bgFirinlar = firinlar.filter(f => f.hedef.includes(mId)).map(f => f.id_str);
                     let bgSilolar = silolar.filter(s => s.kanallar.some(k => k && k.includes(mId))).map(s => s.id_str);
-                    receteler[veri] = { firinlar: bgFirinlar, silolar: bgSilolar, ekTip: makinalar[seciliIndex].ekTip, ekVeri: makinalar[seciliIndex].ekVeri };
+                    receteler[veri] = { 
+                        firinlar: bgFirinlar, silolar: bgSilolar, 
+                        ekler: JSON.parse(JSON.stringify(makinalar[seciliIndex].ekler)) // Derin kopya ile varil bilgisini öğren
+                    };
                 }
             }
             verileriKaydet(); document.getElementById('detay-modal').style.display = "none"; ekranlariCiz();
