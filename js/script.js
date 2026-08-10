@@ -1,333 +1,82 @@
-// --- 1. VERİ TABANI ---
-const siloHamVeri = [
-    { isim: "Silo 1", materyal: "EDISTIR R 321P BULK CM P938", kod: "0002.01B" }, { isim: "Silo 2", materyal: "Mafill CR CT 5344H PPTV20 Rez.", kod: "0128.90B" },
-    { isim: "Silo 3", materyal: "Scolefin CF 4002 black 225230", kod: "0208.45" }, { isim: "Silo 4", materyal: "Pentamid AB GV10 MC20 H2 RC1 tiefsch.", kod: "0497.90" },
-    { isim: "Silo 5", materyal: "Mafill CRHT 6344 schwarz", kod: "0208.15" }, { isim: "Silo 6", materyal: "Seculene PPX 8027 S0 (DC) schwarz", kod: "0208.01B" },
-    { isim: "Silo 7", materyal: "Mafill CR CT 5344H PPTV20 Rez.", kod: "0128.90B" }, { isim: "Silo 8", materyal: "Anjacom PA6 3255", kod: "0497.95B" },
-    { isim: "Silo 9", materyal: "Hostacom XM2 U34 schwarz 102942", kod: "0128.01B" }, { isim: "Silo 10", materyal: "Hostacom XM2 U34 schwarz 102942", kod: "0128.01B" },
-    { isim: "Silo 11", materyal: "BGV 25C evograu 2,G2/290 2,5L", kod: "0368.01B" }, { isim: "Silo 12", materyal: "Seculene PPX 8027 S0 (DC) schwarz", kod: "0208.01B" },
-    { isim: "Silo 13", materyal: "Hostacom EKC297T schwarz", kod: "0312.01B" }, { isim: "Silo 14", materyal: "Durethan BKV 60 H2.0EF DUS 060 sw.", kod: "0350.65" }
-];
-
-let silolar = []; 
-siloHamVeri.forEach((s, i) => { 
-    silolar.push({ id_str: `silo_${i+1}`, isim: s.isim, materyal: s.materyal, kod: s.kod, teknik: "", aktif: true, kanallar: ["Boş", "Boş", "Boş", "Boş"], x: 100, y: i * 200 + 100 }); 
-});
-
-let firinlar = []; 
-for (let i = 1; i <= 16; i++) { 
-    firinlar.push({ id_str: `firin_${i}`, isim: `Fırın ${i}`, sicaklik: "80°C", aktif: true, hedef: "Boş", ekTip: "yok", ekVeri: "", x: 600, y: (i-1) * 200 + 100 }); 
+:root {
+  --bg: #1e1e1e; --card: #2c3e50; --text: #ecf0f1;
+  --accent: #3498db; --danger: #e74c3c; --success: #2ecc71;
+  font-family: system-ui, sans-serif;
 }
+* { box-sizing: border-box; touch-action: pan-x pan-y; } 
+body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
 
-const makinaIsimleri = ["400-2", "400-3", "500-9", "600-4", "600-7", "650-2", "650-8", "800-1", "800-4", "850-2", "850-3", "850-4", "900-1", "1000-3", "1000-4", "1100-1", "1450-1", "1600-3", "1700-2", "1700-3"];
-let makinalar = []; 
-makinaIsimleri.forEach((isim, index) => { 
-    makinalar.push({ id_str: `makina_${index + 1}`, isim: `Makina ${isim}`, urun: "Belirlenmedi", aktif: true, umbau: false, ekTip: "yok", ekVeri: "", x: 1100, y: index * 200 + 100 }); 
-});
-
-// --- 2. ZİNCİR VE LED MOTORU ---
-function getCihazIsim(idStr) {
-    let s = silolar.find(x => x.id_str === idStr); if (s) return s.isim;
-    let f = firinlar.find(x => x.id_str === idStr); if (f) return f.isim;
-    let m = makinalar.find(x => x.id_str === idStr); if (m) return m.isim;
-    return null;
+#kontrol-paneli { 
+  position: fixed; top: 10px; left: 10px; z-index: 2000; 
+  background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(5px); 
+  padding: 10px; border-radius: 8px; border: 1px solid #444; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 150px; 
+  transition: all 0.3s ease; overflow: hidden; 
 }
+#panel-baslik { margin: 0; font-size: 15px; color: #3498db; text-align: center; cursor: pointer; padding: 5px 0;}
+#panel-icerik { max-height: 0; opacity: 0; transition: all 0.3s ease; }
+#kontrol-paneli:hover, #kontrol-paneli.acik { width: 180px; }
+#kontrol-paneli:hover #panel-icerik, #kontrol-paneli.acik #panel-icerik { max-height: 220px; opacity: 1; margin-top: 10px; }
 
-function baglantiOzetiniOlustur(veri, tip) {
-    let html = "";
-    if (tip === "silo") {
-        let out = [];
-        veri.kanallar.forEach(k => { if (k && k !== "Boş") k.split(',').forEach(h => { let isim = getCihazIsim(h.trim()); if(isim) out.push(`<span class="goto-cihaz" data-target="${h.trim()}">${isim}</span>`); }); });
-        html = out.length > 0 ? `📤 Giden: ${[...new Set(out)].join(', ')}` : `<span style='color:#7f8c8d'>📤 Bağlantı Yok</span>`;
-    } 
-    else if (tip === "firin" || tip === "makina") {
-        let inc = [];
-        if (tip === "makina") {
-            firinlar.forEach(f => {
-                if (f.hedef && f.hedef.includes(veri.id_str)) {
-                    let siloBulundu = false;
-                    silolar.forEach(s => {
-                        s.kanallar.forEach(k => {
-                            if (k && k.includes(f.id_str)) {
-                                siloBulundu = true;
-                                inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`);
-                            }
-                        })
-                    });
-                    if (!siloBulundu) inc.push(`📥 <span style="color:#e74c3c">? (Silo Yok)</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`);
-                }
-            });
-        }
-        
-        silolar.forEach(s => {
-            s.kanallar.forEach(k => {
-                if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) {
-                    inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <br><span style="color:#2c3e50;"><b>${s.kod}</b> ${s.materyal}</span>`);
-                }
-            })
-        });
+.zoom-araclari { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.zoom-araclari button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 14px; border-radius: 6px; font-weight:bold; font-size: 16px; cursor:pointer;}
+#zoom-seviyesi { font-size: 14px; font-weight: bold; width: 45px; text-align: center; }
 
-        if (veri.ekTip !== "yok" && veri.ekVeri !== "") { inc.push(`➕ Ek: <span style="color:#2980b9;">${veri.ekVeri}</span>`); }
-        
-        inc = [...new Set(inc)];
-        html = inc.length > 0 ? `${inc.join('<hr style="margin:4px 0; border-top:1px solid rgba(0,0,0,0.1);">')}` : `<span style='color:#7f8c8d'>📥 Giriş Yok</span>`;
-        
-        if (tip === "firin") {
-            let out = [];
-            if (veri.hedef && veri.hedef !== "Boş") veri.hedef.split(',').forEach(h => { let isim = getCihazIsim(h.trim()); if(isim) out.push(`<span class="goto-cihaz" data-target="${h.trim()}">${isim}</span>`); });
-            html += `<hr style="margin:4px 0; border-top:1px solid rgba(0,0,0,0.1);">${out.length > 0 ? `📤 Giden: ${out.join(', ')}` : `<span style='color:#7f8c8d'>📤 Çıkış Yok</span>`}`;
-        }
-    }
-    return `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed rgba(0,0,0,0.2); color:#2c3e50; line-height:1.4; font-size:10px;">${html}</div>`;
+/* KİLİT BUTONU */
+#btn-kilitle { width: 100%; margin-top: 8px; border: none; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; color: white; transition: 0.2s; }
+.kilit-acik { background: #e74c3c; }
+.kilit-kapali { background: #27ae60; box-shadow: 0 0 8px rgba(46, 204, 113, 0.5); }
+
+#fabrika-sahasi { width: 100vw; height: 100vh; position: relative; background: #111; touch-action: none; }
+#sahne { width: 3000px; height: 3000px; position: absolute; top: 0; left: 0; background-image: radial-gradient(#444 1px, transparent 1px); background-size: 40px 40px; transform-origin: 0 0; transition: transform 0.2s ease-out; }
+#cizim-alani { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+#cihazlar-kapsayici { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+
+.kutu { padding: 12px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: absolute; width: 180px; cursor: grab; transition: all 0.3s ease; }
+.kutu-aktif { background: linear-gradient(145deg, #d4fc79, #96e6a1); color: #1e272e; border: 2px solid #2ecc71; }
+.kutu-kapali { background: linear-gradient(145deg, #e2e2e2, #c9d6ff); color: #2d3436; border: 2px solid #95a5a6; opacity: 0.9; }
+
+.kutu-ikon { font-size: 32px; text-align: center; margin-bottom: 5px; background: rgba(0,0,0,0.05); border-radius: 6px; padding: 4px; pointer-events: none;}
+.kutu-baslik { font-weight: bold; font-size: 15px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; margin-bottom: 6px; pointer-events: none;}
+.kutu-bilgi { font-size: 11px; text-align: center; color: #34495e; line-height: 1.3; pointer-events: auto;}
+
+.guc-dugmeleri { display: flex; margin-top: 10px; width: 100%; }
+.btn-toggle { width: 100%; border: none; padding: 10px; font-weight: bold; border-radius: 6px; font-size: 12px; cursor: pointer; color: white; transition: 0.2s;}
+.btn-toggle.btn-on { background: #27ae60; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
+.btn-toggle.btn-off { background: #c0392b; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
+
+.durum-paneli { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 5; pointer-events: none;}
+.led { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); background: #7f8c8d; box-shadow: inset 0 1px 2px rgba(255,255,255,0.4); }
+.led-silo { background: #e67e22; box-shadow: 0 0 8px #e67e22; } 
+.led-firin { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; } 
+.led-ek-merkez { background: #1b1464; box-shadow: 0 0 8px #3498db; } 
+.led-ek-lokal { background: #00a8ff; box-shadow: 0 0 8px #00a8ff; } 
+
+.node-in, .node-out { width: 34px; height: 34px; border-radius: 50%; position: absolute; border: 4px solid #111; z-index: 10; cursor: pointer;}
+.node-in { background: #2ecc71; left: -17px; top: 50%; margin-top: -17px; }
+.node-out.tekli { top: 50%; margin-top: -17px; background: #f1c40f; right: -17px; }
+.silo-nodes { position: absolute; right: -14px; top: 15px; bottom: 15px; display: flex; flex-direction: column; justify-content: space-around; }
+.silo-nodes .node-out { position: relative; right: 0; border: 3px solid #111; width: 28px; height: 28px;}
+.node-ch1 { background: #f1c40f !important; } .node-ch2 { background: #3498db !important; } .node-ch3 { background: #e74c3c !important; } .node-ch4 { background: #bdc3c7 !important; }
+
+.node-secili { border-color: #fff !important; animation: blink 1s infinite; transform: scale(1.2); }
+@keyframes blink { 0% { box-shadow: 0 0 10px #fff; } 50% { box-shadow: 0 0 20px #fff; } 100% { box-shadow: 0 0 10px #fff; } }
+
+.goto-cihaz { color: #d35400; text-decoration: underline; cursor: pointer; font-weight: bold; padding: 2px; }
+.goto-cihaz:active { background: rgba(0,0,0,0.1); }
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.9); border-color: #3498db; }
+  70% { box-shadow: 0 0 0 20px rgba(52, 152, 219, 0); border-color: #3498db; }
+  100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
 }
+.highlight { animation: highlight-pulse 1.2s ease-out; border-color: #3498db !important; }
 
-function durumLambalariniUret(veri, tip) {
-    if (tip === "silo") return "";
-    let ledHtml = "";
-    let isSilo = false; let isFirin = false;
-    
-    if (tip === "firin") {
-        silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(veri.id_str)) isSilo = true; }); });
-    } else if (tip === "makina") {
-        firinlar.forEach(f => {
-            if (f.hedef && f.hedef.includes(veri.id_str)) {
-                isFirin = true;
-                silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(f.id_str)) isSilo = true; }); });
-            }
-        });
-        silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(veri.id_str)) isSilo = true; }); });
-    }
-
-    if (isSilo) ledHtml += `<div class="led led-silo" title="Silo Bağlı"></div>`;
-    if (isFirin) ledHtml += `<div class="led led-firin" title="Fırın Bağlı"></div>`;
-    if (veri.ekTip === "merkez") ledHtml += `<div class="led led-ek-merkez" title="Merkezî Ek Besleme"></div>`;
-    if (veri.ekTip === "lokal") ledHtml += `<div class="led led-ek-lokal" title="Lokal Ek Besleme"></div>`;
-
-    return `<div class="durum-paneli">${ledHtml}</div>`;
-}
-
-// --- 3. HTML OLUŞTURMA ---
-function ekranlariCiz() {
-    const kapsayici = document.getElementById('cihazlar-kapsayici'); let html = "";
-    silolar.forEach((s, i) => { html += olusturHTML(s, "silo", i, "🛢️"); });
-    firinlar.forEach((f, i) => { html += olusturHTML(f, "firin", i, "🔥"); });
-    makinalar.forEach((m, i) => { html += olusturHTML(m, "makina", i, "⚙️"); });
-    kapsayici.innerHTML = html;
-}
-
-function olusturHTML(veri, tip, index, ikon) {
-    let nodeSol = (tip === "firin" || tip === "makina") ? `<div class="node-in"></div>` : "";
-    let nodeSag = (tip === "silo") ? `<div class="silo-nodes"><div class="node-out node-ch1" data-kanal="0"></div><div class="node-out node-ch2" data-kanal="1"></div><div class="node-out node-ch3" data-kanal="2"></div><div class="node-out node-ch4" data-kanal="3"></div></div>` : (tip === "firin" ? `<div class="node-out tekli" data-kanal="0"></div>` : "");
-    
-    // YENİ: Kutu aktif ise 'kutu-aktif', değilse 'kutu-kapali' sınıfı ekleniyor
-    let durumClass = veri.aktif ? "kutu-aktif" : "kutu-kapali";
-    
-    let bilgi = (tip === "silo") ? `<b>${veri.kod}</b><br><span style="font-size:10px;">${veri.materyal}</span>` : (tip === "firin" ? `Isı: ${veri.sicaklik}` : `Ürün: ${veri.urun}`);
-    bilgi += baglantiOzetiniOlustur(veri, tip); 
-
-    return `<div class="kutu ${durumClass}" id="${veri.id_str}" data-tip="${tip}" data-index="${index}" style="left: ${veri.x}px; top: ${veri.y}px;">
-                ${durumLambalariniUret(veri, tip)}
-                ${nodeSol} ${nodeSag}
-                <div class="kutu-ikon">${ikon}</div>
-                <div class="kutu-baslik">${veri.isim}</div>
-                <div class="kutu-bilgi">${bilgi}</div>
-                <div class="guc-dugmeleri"><button class="btn-toggle ${veri.aktif ? 'btn-on' : 'btn-off'}">${veri.aktif ? 'AÇIK' : 'KAPALI'}</button></div>
-            </div>`;
-}
-
-// --- 4. PAN/ZOOM VE KAMERA ---
-document.getElementById('panel-baslik').onclick = function() { document.getElementById('kontrol-paneli').classList.toggle('acik'); };
-const sahne = document.getElementById('sahne');
-let scale = 1; let panX = 0; let panY = 0;
-document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale * 1.5, 3); guncelleSahne(); };
-document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(scale * 0.4, 0.2); guncelleSahne(); };
-function guncelleSahne() { sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; document.getElementById('zoom-seviyesi').innerText = Math.round(scale * 100) + '%'; }
-
-function cihazaGit(hedefIdStr) {
-    const hedef = document.getElementById(hedefIdStr); if (!hedef) return;
-    const w = document.getElementById('fabrika-sahasi').offsetWidth; const h = document.getElementById('fabrika-sahasi').offsetHeight;
-    panX = (w / 2) - ((parseInt(hedef.style.left) + 90) * scale); panY = (h / 2) - ((parseInt(hedef.style.top) + 120) * scale);
-    guncelleSahne(); hedef.classList.remove('highlight'); void hedef.offsetWidth; hedef.classList.add('highlight');
-}
-
-// --- 5. TIKLA-TIKLA BAĞLANTI (TAP-TO-CONNECT) & SÜRÜKLEME ---
-let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
-let suruklenenKutu = null; let offset = { x: 0, y: 0 }; let kutuSuruklendiMi = false;
-let bekleyenCikisNoktasi = null;
-
-function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
-    const tip = kaynakKutu.dataset.tip; const idx = parseInt(kaynakKutu.dataset.index);
-    if (tip === "silo") {
-        let m = silolar[idx].kanallar[kanalIndex];
-        silolar[idx].kanallar[kanalIndex] = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
-    } else if (tip === "firin") {
-        let m = firinlar[idx].hedef;
-        firinlar[idx].hedef = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
-    }
-}
-
-function handleStart(e) {
-    if (e.target.closest('#kontrol-paneli') || e.target.closest('.modal')) return;
-    const t = e.target;
-    
-    if (t.classList.contains('node-out')) {
-        e.preventDefault();
-        if (bekleyenCikisNoktasi) bekleyenCikisNoktasi.classList.remove('node-secili');
-        bekleyenCikisNoktasi = t; bekleyenCikisNoktasi.classList.add('node-secili'); return;
-    }
-    
-    if (t.classList.contains('node-in') && bekleyenCikisNoktasi) {
-        let kaynakKutu = bekleyenCikisNoktasi.closest('.kutu'); let kanalIndex = bekleyenCikisNoktasi.dataset.kanal || 0; let hedefKutu = t.closest('.kutu');
-        if (kaynakKutu.id !== hedefKutu.id) { baglantiEkle(kaynakKutu, kanalIndex, hedefKutu.id); }
-        bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null; ekranlariCiz(); return;
-    }
-
-    if (bekleyenCikisNoktasi && !t.classList.contains('node-out') && !t.classList.contains('node-in')) {
-        bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null;
-    }
-
-    const pos = e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
-    const kutu = t.closest('.kutu');
-    
-    if (kutu && !t.matches('button') && !t.classList.contains('goto-cihaz')) {
-        suruklenenKutu = kutu; kutuSuruklendiMi = false;
-        offset.x = (pos.x - kutu.getBoundingClientRect().left) / scale; offset.y = (pos.y - kutu.getBoundingClientRect().top) / scale;
-        kutu.style.zIndex = 1000;
-    } else if (!kutu) {
-        isPanning = true; baslangicPanX = pos.x - panX; baslangicPanY = pos.y - panY;
-    }
-}
-
-function handleMove(e) {
-    if(!isPanning && !suruklenenKutu) return;
-    e.preventDefault(); 
-    const pos = e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
-    
-    if (isPanning) {
-        panX = pos.x - baslangicPanX; panY = pos.y - baslangicPanY;
-        sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-    } else if (suruklenenKutu) {
-        kutuSuruklendiMi = true; let rect = sahne.getBoundingClientRect();
-        suruklenenKutu.style.left = ((pos.x - rect.left) / scale - offset.x) + 'px';
-        suruklenenKutu.style.top = ((pos.y - rect.top) / scale - offset.y) + 'px';
-    }
-}
-
-function handleEnd(e) {
-    isPanning = false;
-    if (suruklenenKutu) {
-        suruklenenKutu.style.zIndex = "";
-        const idx = parseInt(suruklenenKutu.dataset.index);
-        const yX = parseInt(suruklenenKutu.style.left); const yY = parseInt(suruklenenKutu.style.top);
-        if (suruklenenKutu.dataset.tip === "silo") { silolar[idx].x = yX; silolar[idx].y = yY; } 
-        else if (suruklenenKutu.dataset.tip === "firin") { firinlar[idx].x = yX; firinlar[idx].y = yY; } 
-        else { makinalar[idx].x = yX; makinalar[idx].y = yY; }
-        suruklenenKutu = null; setTimeout(() => { kutuSuruklendiMi = false; }, 50);
-    }
-}
-
-document.addEventListener('mousedown', handleStart, {passive: false});
-document.addEventListener('mousemove', handleMove, {passive: false});
-document.addEventListener('mouseup', handleEnd);
-document.addEventListener('touchstart', handleStart, {passive: false});
-document.addEventListener('touchmove', handleMove, {passive: false});
-document.addEventListener('touchend', handleEnd);
-
-
-// --- 6. CANVAS ÇİZİMİ ---
-const canvas = document.getElementById('cizim-alani'); const ctx = canvas.getContext('2d'); let dashOffset = 0;
-const kanalRenkleri = ["#f1c40f", "#3498db", "#e74c3c", "#bdc3c7"]; 
-
-function cizgiCiz(kaynakId, hedefId, aktifRenk, kaynakAktif, kanalIndex) {
-    const kaynak = document.getElementById(kaynakId); const hedef = document.getElementById(hedefId);
-    if (!kaynak || !hedef) return;
-    let hedefAktif = (hedef.dataset.tip === "firin") ? firinlar[hedef.dataset.index].aktif : makinalar[hedef.dataset.index].aktif;
-    let c = kaynak.querySelector(`.node-out[data-kanal="${kanalIndex}"]`) || kaynak.querySelector('.node-out');
-    let g = hedef.querySelector('.node-in');
-    const rS = sahne.getBoundingClientRect(); const rC = c.getBoundingClientRect(); const rG = g.getBoundingClientRect();
-    const sX = (rC.left - rS.left + rC.width / 2) / scale; const sY = (rC.top - rS.top + rC.height / 2) / scale;
-    const eX = (rG.left - rS.left + rG.width / 2) / scale; const eY = (rG.top - rS.top + rG.height / 2) / scale;
-    ctx.beginPath(); ctx.moveTo(sX, sY); ctx.bezierCurveTo((sX + eX)/2, sY, (sX + eX)/2, eY, eX, eY);
-    const bag = kaynakAktif && hedefAktif;
-    ctx.strokeStyle = bag ? aktifRenk : "rgba(100, 100, 100, 0.4)"; ctx.lineWidth = bag ? 5 : 2;
-    if (bag) { ctx.setLineDash([12, 12]); ctx.lineDashOffset = -dashOffset; } else ctx.setLineDash([]);
-    ctx.stroke();
-}
-
-function animasyonDongusu() { 
-    dashOffset += 1.5; ctx.clearRect(0, 0, canvas.width, canvas.height);
-    silolar.forEach(s => { s.kanallar.forEach((kanal, kIdx) => { if (kanal && kanal !== "Boş") kanal.split(',').forEach(hId => cizgiCiz(s.id_str, hId.trim(), kanalRenkleri[kIdx], s.aktif, kIdx)); }); });
-    firinlar.forEach(f => { if (f.hedef && f.hedef !== "Boş") f.hedef.split(',').forEach(hId => cizgiCiz(f.id_str, hId.trim(), "#e67e22", f.aktif, 0)); });
-    requestAnimationFrame(animasyonDongusu); 
-}
-
-// --- 7. TIKLAMA / MODAL YÖNETİMİ ---
-window.baglantiSilGlobal = function(kaynakId, hedefId) {
-    silolar.forEach((s, idx) => { if(s.id_str === kaynakId) { s.kanallar.forEach((k, kIdx) => { if(k) { let hList = k.split(',').map(x=>x.trim()).filter(x => x !== hedefId); silolar[idx].kanallar[kIdx] = hList.length > 0 ? hList.join(', ') : "Boş"; } }); } });
-    firinlar.forEach((f, idx) => { if(f.id_str === kaynakId) { if(f.hedef) { let hList = f.hedef.split(',').map(x=>x.trim()).filter(x => x !== hedefId); firinlar[idx].hedef = hList.length > 0 ? hList.join(', ') : "Boş"; } } });
-    document.getElementById('detay-modal').style.display = "none"; ekranlariCiz();
-};
-
-document.addEventListener('click', (e) => {
-    const t = e.target;
-    if (t.classList.contains('goto-cihaz')) { cihazaGit(t.dataset.target); return; }
-    if (t.classList.contains('btn-kopar') || t.classList.contains('node-out') || t.classList.contains('node-in') || t.closest('#kontrol-paneli')) return; 
-
-    if (t.classList.contains('btn-toggle')) {
-        const kutu = t.closest('.kutu'); const tip = kutu.dataset.tip; const idx = parseInt(kutu.dataset.index);
-        if (tip === "silo") silolar[idx].aktif = !silolar[idx].aktif;
-        if (tip === "firin") firinlar[idx].aktif = !firinlar[idx].aktif;
-        if (tip === "makina") makinalar[idx].aktif = !makinalar[idx].aktif;
-        ekranlariCiz(); return;
-    }
-
-    const kutu = t.closest('.kutu');
-    if (kutu && !t.matches('button') && !kutuSuruklendiMi) {
-        const tip = kutu.dataset.tip; const seciliIndex = parseInt(kutu.dataset.index);
-        
-        let gelenler = [];
-        silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${s.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">${s.kod}</span></li>`); }); });
-        firinlar.forEach(f => { if(f.hedef && f.hedef.includes(kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">Isı: ${f.sicaklik}</span></li>`); });
-        document.getElementById('gelen-listesi').innerHTML = gelenler.join('') || "<li>Henüz giriş yok.</li>";
-
-        document.getElementById('silo-kanallari-inputlari').style.display = "none"; document.getElementById('firin-hedef-inputu').style.display = "none";
-        document.getElementById('silo-ozel-bilgiler').style.display = "none"; document.getElementById('ek-besleme-alani').style.display = "none";
-
-        if (tip === "silo") {
-            document.getElementById('modal-baslik').innerText = silolar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Materyal Açıklaması:"; document.getElementById('modal-input-veri').value = silolar[seciliIndex].materyal;
-            document.getElementById('silo-ozel-bilgiler').style.display = "block"; document.getElementById('modal-input-kod').value = silolar[seciliIndex].kod; document.getElementById('modal-input-teknik').value = silolar[seciliIndex].teknik;
-            document.getElementById('silo-kanallari-inputlari').style.display = "block";
-            for(let i=1; i<=4; i++) document.getElementById(`modal-kanal-${i}`).value = silolar[seciliIndex].kanallar[i-1];
-        } else if (tip === "firin") {
-            document.getElementById('modal-baslik').innerText = firinlar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Fırın Sıcaklığı:"; document.getElementById('modal-input-veri').value = firinlar[seciliIndex].sicaklik;
-            document.getElementById('firin-hedef-inputu').style.display = "block"; document.getElementById('modal-firin-hedef').value = firinlar[seciliIndex].hedef;
-            document.getElementById('ek-besleme-alani').style.display = "block"; document.getElementById('modal-ek-tip').value = firinlar[seciliIndex].ekTip; document.getElementById('modal-ek-malzeme').value = firinlar[seciliIndex].ekVeri;
-        } else {
-            document.getElementById('modal-baslik').innerText = makinalar[seciliIndex].isim; document.getElementById('modal-etiket').innerText = "Üretilen Ürün:"; document.getElementById('modal-input-veri').value = makinalar[seciliIndex].urun;
-            document.getElementById('ek-besleme-alani').style.display = "block"; document.getElementById('modal-ek-tip').value = makinalar[seciliIndex].ekTip; document.getElementById('modal-ek-malzeme').value = makinalar[seciliIndex].ekVeri;
-        }
-        
-        document.getElementById('detay-modal').style.display = "flex";
-        
-        document.getElementById('modal-kaydet').onclick = () => {
-            const veri = document.getElementById('modal-input-veri').value;
-            if (tip === "silo") {
-                silolar[seciliIndex].materyal = veri; silolar[seciliIndex].kod = document.getElementById('modal-input-kod').value; silolar[seciliIndex].teknik = document.getElementById('modal-input-teknik').value;
-                for(let i=1; i<=4; i++) silolar[seciliIndex].kanallar[i-1] = document.getElementById(`modal-kanal-${i}`).value;
-            } else if (tip === "firin") {
-                firinlar[seciliIndex].sicaklik = veri; firinlar[seciliIndex].hedef = document.getElementById('modal-firin-hedef').value;
-                firinlar[seciliIndex].ekTip = document.getElementById('modal-ek-tip').value; firinlar[seciliIndex].ekVeri = document.getElementById('modal-ek-malzeme').value;
-            } else { 
-                makinalar[seciliIndex].urun = veri; 
-                makinalar[seciliIndex].ekTip = document.getElementById('modal-ek-tip').value; makinalar[seciliIndex].ekVeri = document.getElementById('modal-ek-malzeme').value;
-            }
-            document.getElementById('detay-modal').style.display = "none"; ekranlariCiz();
-        };
-    }
-
-    if (t.id === "modal-kapat" || t.id === "modal-kapat-alt" || t.id === "detay-modal") {
-        document.getElementById('detay-modal').style.display = "none";
-    }
-});
-
-document.addEventListener("DOMContentLoaded", () => { ekranlariCiz(); animasyonDongusu(); });
+.modal { position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center;}
+.modal-icerik { background: #ecf0f1; color: #2c3e50; padding: 20px; border-radius: 12px; width: 95%; max-width: 350px; position: relative; max-height:90vh; overflow-y:auto;}
+.kapat-btn { position: absolute; right: 15px; top: 10px; font-size: 32px; cursor: pointer; color:#e74c3c; }
+.modal-input { width: 100%; padding: 12px; margin: 4px 0 12px 0; border: 1px solid #bdc3c7; border-radius:6px; font-size:14px; }
+textarea.modal-input { resize: vertical; font-family: inherit; }
+.kaydet-btn { background: var(--accent); color: white; width: 100%; padding: 15px; border: none; border-radius:6px; font-weight:bold; font-size:16px; margin-top:5px; cursor:pointer;}
+.kapat-alt-btn { background: #7f8c8d; color: white; width: 100%; padding: 12px; border: none; border-radius:6px; font-weight:bold; font-size:14px; margin-top:5px; cursor:pointer;}
+.btn-kopar { background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; float:right; margin-left:8px;}
+.liste-satiri { background:#fff; margin-bottom:5px; padding:8px; border-radius:4px; border:1px solid #ddd; overflow:hidden; font-size:12px;}
