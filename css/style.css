@@ -23,23 +23,20 @@ body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; u
 #fabrika-sahasi { width: 100vw; height: 100vh; position: relative; background: #111; touch-action: none; }
 #sahne { width: 3000px; height: 3000px; position: absolute; top: 0; left: 0; background-image: radial-gradient(#444 1px, transparent 1px); background-size: 40px 40px; transform-origin: 0 0; transition: transform 0.2s ease-out; }
 
-/* KABLOLAR (KAPANAN NESNELER İÇİN SOLUK RENK) */
-.svg-kablo { fill: none; stroke-linecap: round; transition: all 0.4s ease; }
-.svg-kablo-pasif { stroke: rgba(150, 150, 150, 0.15); stroke-width: 2; } /* Kapalıyken neredeyse görünmez/saydam */
-.svg-kablo-aktif { stroke-width: 6; filter: drop-shadow(0 0 5px currentcolor); } /* Açıkken canlı ve kalın */
+/* KABLOLAR - NEON (Drop-shadow) KALDIRILDI! SIFIR GPU YÜKÜ! */
+.svg-kablo { fill: none; stroke-linejoin: round; transition: stroke 0.4s ease, stroke-width 0.4s ease; }
+.svg-kablo-pasif { stroke: rgba(120, 120, 120, 0.2); stroke-width: 2; } /* Pasifken çok ince ve soluk */
+.svg-kablo-aktif { stroke-width: 4; } /* Aktifken neon yok, sadece kalın 4px düz renk */
 
 /* AKILLI (KOMPAKT) KUTULAR */
 .kutu { padding: 10px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: absolute; width: 130px; cursor: grab; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s; z-index: 10;}
 
-/* V4.1 CİHAZLARA ÖZEL RENK KODLAMASI */
-/* SİLOLAR (Metalik) */
+/* CİHAZLARA ÖZEL RENK KODLAMASI */
 .kutu-silo-aktif { background: linear-gradient(145deg, #fdfbfb, #ebedee); color: #2c3e50; border: 2px solid #bdc3c7; box-shadow: inset 0 0 10px rgba(255,255,255,0.8); }
 .kutu-silo-kapali { background: linear-gradient(145deg, #7f8c8d, #576574); color: #ecf0f1; border: 2px solid #576574; opacity: 0.8; }
-/* FIRINLAR (Turuncu) */
-.kutu-firin-aktif { background: linear-gradient(145deg, #ff9f43, #ff7f50); color: #fff; border: 2px solid #e67e22; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.kutu-firin-aktif { background: linear-gradient(145deg, #ff9f43, #ff7f50); color: #fff; border: 2px solid #e67e22; }
 .kutu-firin-kapali { background: linear-gradient(145deg, #b36e22, #834f18); color: #dcdde1; border: 2px solid #834f18; opacity: 0.8; }
-/* MAKİNALAR (Yeşil) */
-.kutu-makina-aktif { background: linear-gradient(145deg, #10ac84, #1dd1a1); color: #fff; border: 2px solid #0be881; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.kutu-makina-aktif { background: linear-gradient(145deg, #10ac84, #1dd1a1); color: #fff; border: 2px solid #0be881; }
 .kutu-makina-kapali { background: linear-gradient(145deg, #054a37, #043628); color: #a4b0be; border: 2px solid #043628; opacity: 0.8; }
 
 .ayar-btn { position:absolute; top:-10px; left:-10px; background:#34495e; color:#fff; width:26px; height:26px; border-radius:50%; text-align:center; line-height:24px; font-size:14px; cursor:pointer; border:2px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,0.5); z-index:20; transition:0.2s; }
@@ -55,18 +52,17 @@ body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; u
 .kutu-baslik { font-weight: bold; font-size: 13px; text-align: center; pointer-events: none; margin-top:4px; color:inherit;}
 .kutu-bilgi { font-size: 11px; text-align: center; color: inherit; line-height: 1.4;}
 
-/* Goto cihaz linkinin her arka planda okunması için inherit ayarı */
 .goto-cihaz { color: inherit; border-bottom: 1px dashed currentcolor; cursor: pointer; font-weight: bold; padding: 1px; }
 
 .guc-dugmeleri { display: flex; margin-top: 8px; width: 100%; }
-.btn-toggle { width: 100%; border: 1px solid rgba(255,255,255,0.3); padding: 8px; font-weight: bold; border-radius: 6px; font-size: 11px; cursor: pointer; color: white; transition: 0.2s; text-shadow: 0 1px 2px rgba(0,0,0,0.6);}
+.btn-toggle { width: 100%; border: 1px solid rgba(255,255,255,0.3); padding: 8px; font-weight: bold; border-radius: 6px; font-size: 11px; cursor: pointer; color: white; transition: 0.2s; }
 .btn-toggle.btn-on { background: #27ae60; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
 .btn-toggle.btn-off { background: #c0392b; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
 
 .durum-paneli { position: absolute; top: 6px; right: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 5; pointer-events: none;}
-.led { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); background: #7f8c8d; box-shadow: inset 0 1px 2px rgba(255,255,255,0.4); transition: background 0.3s; }
-.led-silo { background: #e67e22; box-shadow: 0 0 8px #e67e22; } .led-firin { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; } 
-.led-ek-merkez { background: #1b1464; box-shadow: 0 0 8px #3498db; } .led-ek-lokal { background: #00a8ff; box-shadow: 0 0 8px #00a8ff; } 
+.led { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); background: #7f8c8d; transition: background 0.3s; }
+.led-silo { background: #e67e22; } .led-firin { background: #e74c3c; } 
+.led-ek-merkez { background: #1b1464; } .led-ek-lokal { background: #00a8ff; } 
 
 /* NODLAR (GİRİŞ/ÇIKIŞ) */
 .silo-ana-node { position: absolute; right: -15px; top: 50%; margin-top: -15px; width: 30px; height: 30px; border-radius: 50%; background: #34495e; border: 3px solid #111; z-index: 12; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; color:white;}
@@ -79,7 +75,7 @@ body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; u
 .node-in { background: #2ecc71; left: -15px; top: 50%; margin-top: -15px; }
 .node-out.tekli { top: 50%; margin-top: -15px; background: #e67e22; right: -15px; }
 .node-ch1 { background: #f1c40f !important; } .node-ch2 { background: #3498db !important; } .node-ch3 { background: #e74c3c !important; } .node-ch4 { background: #bdc3c7 !important; }
-.node-secili { border-color: #fff !important; transform: scale(1.3) !important; z-index: 20 !important; filter: drop-shadow(0 0 5px white);}
+.node-secili { border-color: #fff !important; transform: scale(1.3) !important; z-index: 20 !important;}
 
 /* KAYAR ÇEKMECE PANEL */
 .yan-panel { position: fixed; right: -400px; top: 0; width: 360px; height: 100vh; background: #ecf0f1; box-shadow: -10px 0 30px rgba(0,0,0,0.5); transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 3000; display: flex; flex-direction: column; color:#2c3e50;}
