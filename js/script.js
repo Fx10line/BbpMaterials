@@ -37,12 +37,6 @@ function verileriKaydet() {
 
 let konumlarKilitli = false;
 
-// YENİ: KUSURSUZ KİMLİK DOĞRULAYICI (Makina 1 vs Makina 10 Karışıklığını Önler)
-function bagVarMi(kanalStr, id) {
-    if (!kanalStr || kanalStr === "Boş") return false;
-    return kanalStr.split(',').map(x => x.trim()).includes(id);
-}
-
 // --- 2. DURUM LAMBALARI VE ZİNCİR ÖZETİ ---
 function getCihazIsim(idStr) {
     let s = silolar.find(x => x.id_str === idStr); if (s) return s.isim;
@@ -59,12 +53,12 @@ function baglantiOzetiniOlustur(veri, tip) {
     } else if (tip === "firin" || tip === "makina") {
         let inc = [];
         if (tip === "makina") {
-            firinlar.forEach(f => { if (bagVarMi(f.hedef, veri.id_str)) {
-                let siloBulundu = false; silolar.forEach(s => { s.kanallar.forEach(k => { if (bagVarMi(k, f.id_str)) { siloBulundu = true; inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`); } }) });
+            firinlar.forEach(f => { if (f.hedef && f.hedef.includes(veri.id_str)) {
+                let siloBulundu = false; silolar.forEach(s => { s.kanallar.forEach(k => { if (k && k.includes(f.id_str)) { siloBulundu = true; inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`); } }) });
                 if (!siloBulundu) inc.push(`📥 <span style="color:#e74c3c">? (Silo Yok)</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`);
             }});
         }
-        silolar.forEach(s => { s.kanallar.forEach(k => { if (bagVarMi(k, veri.id_str)) { inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span>`); } }) });
+        silolar.forEach(s => { s.kanallar.forEach(k => { if (k && k.split(',').map(x=>x.trim()).includes(veri.id_str)) { inc.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span>`); } }) });
         
         if (tip === "firin") { if (veri.ekTip && veri.ekTip !== "yok" && veri.ekVeri !== "") { inc.push(`➕ Ek: <span style="color:#2980b9;">${veri.ekVeri}</span>`); } } 
         else if (tip === "makina" && veri.ekler) { veri.ekler.forEach((ek, idx) => { if (ek.tip && ek.tip !== "yok" && ek.veri !== "") { inc.push(`➕ Ek ${idx+1}: <span style="color:#2980b9;">${ek.veri}</span>`); } }); }
@@ -79,10 +73,10 @@ function baglantiOzetiniOlustur(veri, tip) {
 function durumLambalariniUret(veri, tip) {
     if (tip === "silo") return "";
     let ledHtml = ""; let isSilo = false; let isFirin = false;
-    if (tip === "firin") { silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, veri.id_str)) isSilo = true; }); }); } 
+    if (tip === "firin") { silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(veri.id_str)) isSilo = true; }); }); } 
     else if (tip === "makina") {
-        firinlar.forEach(f => { if (bagVarMi(f.hedef, veri.id_str)) { isFirin = true; silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, f.id_str)) isSilo = true; }); }); } });
-        silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, veri.id_str)) isSilo = true; }); });
+        firinlar.forEach(f => { if (f.hedef && f.hedef.includes(veri.id_str)) { isFirin = true; silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(f.id_str)) isSilo = true; }); }); } });
+        silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(veri.id_str)) isSilo = true; }); });
     }
     if (isSilo) ledHtml += `<div class="led led-silo" title="Silo Bağlı"></div>`;
     if (isFirin) ledHtml += `<div class="led led-firin" title="Fırın Bağlı"></div>`;
@@ -98,9 +92,7 @@ function ekranlariCiz() {
     firinlar.forEach((f, i) => { html += olusturHTML(f, "firin", i, "🔥"); });
     makinalar.forEach((m, i) => { html += olusturHTML(m, "makina", i, "⚙️"); });
     kapsayici.innerHTML = html;
-    
-    // HTML çizildikten sonra SVG düğümlerini oluştur (Sadece 1 kez çalışır)
-    svgKablolariHazirla(); 
+    akisCizgileriniGuncelleSVG(); // Sadece veri güncellenince 1 kez SVG çizer
 }
 
 function olusturHTML(veri, tip, index, ikon) {
@@ -124,6 +116,7 @@ function olusturHTML(veri, tip, index, ikon) {
                 <div class="kutu-ikon">${ikon}</div>
                 <div class="kutu-baslik">${veri.isim}</div>
                 
+                <!-- GİZLİ AKORDEON ALANI -->
                 <div class="kutu-gizli-detay">
                     <div class="kutu-bilgi">${gizliDetayHtml}</div>
                     <div class="guc-dugmeleri"><button class="btn-toggle ${veri.aktif ? 'btn-on' : 'btn-off'}">${veri.aktif ? 'AÇIK' : 'KAPALI'}</button></div>
@@ -143,6 +136,7 @@ function olusturHTML(veri, tip, index, ikon) {
             }
         });
     }
+
     return anaKutuHtml + konteynerHtml;
 }
 
@@ -158,10 +152,10 @@ function cihazaGit(hedefIdStr) {
     const hedef = document.getElementById(hedefIdStr); if (!hedef) return;
     const w = document.getElementById('fabrika-sahasi').offsetWidth; const h = document.getElementById('fabrika-sahasi').offsetHeight;
     panX = (w / 2) - ((parseInt(hedef.style.left) + 65) * scale); panY = (h / 2) - ((parseInt(hedef.style.top) + 60) * scale);
-    guncelleSahne(); hedef.classList.add('dokunuldu'); setTimeout(()=>hedef.classList.remove('dokunuldu'), 3000);
+    guncelleSahne(); hedef.classList.add('dokunuldu'); setTimeout(()=>hedef.classList.remove('dokunuldu'), 3000); // 3 saniye açık tut
 }
 
-// --- 5. TIKLA-TIKLA BAĞLANTI & SÜRÜKLEME ---
+// --- 5. TIKLA-TIKLA BAĞLANTI & AKILLI KORUMALAR ---
 let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 let suruklenenKutu = null; let offset = { x: 0, y: 0 }; 
 let bekleyenCikisNoktasi = null; let startX = 0, startY = 0; let suruklemeYapildi = false; 
@@ -183,13 +177,13 @@ document.getElementById('btn-audit-hayir').onclick = () => {
 function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
     const tip = kaynakKutu.dataset.tip; const idx = parseInt(kaynakKutu.dataset.index);
     if (hedefIdStr.startsWith('firin')) {
-        silolar.forEach(s => { s.kanallar.forEach((k, kIdx) => { if (bagVarMi(k, hedefIdStr)) { let arr = k.split(',').map(x=>x.trim()).filter(x => x !== hedefIdStr); s.kanallar[kIdx] = arr.length > 0 ? arr.join(', ') : "Boş"; } }); });
+        silolar.forEach(s => { s.kanallar.forEach((k, kIdx) => { if (k && k.includes(hedefIdStr)) { let arr = k.split(',').map(x=>x.trim()).filter(x => x !== hedefIdStr); s.kanallar[kIdx] = arr.length > 0 ? arr.join(', ') : "Boş"; } }); });
     }
     if (tip === "silo") {
-        let m = silolar[idx].kanallar[kanalIndex]; silolar[idx].kanallar[kanalIndex] = (m === "Boş" || m === "") ? hedefIdStr : (!bagVarMi(m, hedefIdStr) ? m + `, ${hedefIdStr}` : m);
+        let m = silolar[idx].kanallar[kanalIndex]; silolar[idx].kanallar[kanalIndex] = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
         if (Math.random() < 0.25) tetikleAudit(silolar[idx].id_str);
     } else if (tip === "firin") {
-        let m = firinlar[idx].hedef; firinlar[idx].hedef = (m === "Boş" || m === "") ? hedefIdStr : (!bagVarMi(m, hedefIdStr) ? m + `, ${hedefIdStr}` : m);
+        let m = firinlar[idx].hedef; firinlar[idx].hedef = (m === "Boş" || m === "") ? hedefIdStr : (!m.includes(hedefIdStr) ? m + `, ${hedefIdStr}` : m);
     }
     verileriKaydet();
 }
@@ -215,7 +209,7 @@ function handleStart(e) {
 
     const kutu = t.closest('.kutu');
     
-    // Telefondaki "Hover" (Kutu Genişletme) Efekti
+    // Telefondaki "Hover" yerine dokunarak kutu açma efekti
     if (e.touches && kutu && !t.matches('button') && !t.classList.contains('ayar-btn') && !t.classList.contains('goto-cihaz')) {
         document.querySelectorAll('.kutu.dokunuldu').forEach(el => { if(el !== kutu) el.classList.remove('dokunuldu') });
         kutu.classList.toggle('dokunuldu');
@@ -244,6 +238,7 @@ function handleMove(e) {
         let rect = sahne.getBoundingClientRect();
         suruklenenKutu.style.left = ((pos.x - rect.left) / scale - offset.x) + 'px';
         suruklenenKutu.style.top = ((pos.y - rect.top) / scale - offset.y) + 'px';
+        akisCizgileriniGuncelleSVG(); // Sürüklerken SVG çizgilerini güncelle (Mükemmel performans!)
     }
 }
 
@@ -271,57 +266,58 @@ document.addEventListener('mousedown', handleStart, {passive: false}); document.
 document.addEventListener('touchstart', handleStart, {passive: false}); document.addEventListener('touchmove', handleMove, {passive: false}); document.addEventListener('touchend', handleEnd);
 
 
-// --- 6. DEV YENİLİK: SIFIR İŞLEMCİ YÜKÜ (SVG TAKİP MOTORU) ---
+// --- 6. SIFIR İŞLEMCİ YÜKÜ (SVG ÇİZİM MOTORU) ---
 const kanalRenkleri = ["#f1c40f", "#3498db", "#e74c3c", "#bdc3c7"]; 
 const svgAlan = document.getElementById('cizim-alani');
-let aktifSvgKablolar = []; 
 
-function svgKablolariHazirla() {
-    svgAlan.innerHTML = ""; aktifSvgKablolar = [];
-    
-    function kabloEkle(kaynakNode, hedefNode, renk, aktif, isKonteyner, kaynakIdStr) {
-        if (!kaynakNode || !hedefNode) return;
-        let path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("class", aktif ? "svg-kablo svg-kablo-aktif" : "svg-kablo svg-kablo-pasif");
-        if (aktif) path.style.stroke = renk;
-        svgAlan.appendChild(path);
-        aktifSvgKablolar.push({ path: path, kNode: kaynakNode, gNode: hedefNode, kId: kaynakIdStr, isKont: isKonteyner });
-    }
-
-    silolar.forEach(s => { s.kanallar.forEach((kanal, kIdx) => { if (kanal && kanal !== "Boş") { kanal.split(',').forEach(hId => { let hEl = document.getElementById(hId.trim()); if (hEl) kabloEkle(document.getElementById(s.id_str).querySelector(`.node-out[data-kanal="${kIdx}"]`), hEl.querySelector('.node-in'), kanalRenkleri[kIdx], s.aktif, false, s.id_str); }); } }); });
-    firinlar.forEach(f => { 
-        if (f.hedef && f.hedef !== "Boş") f.hedef.split(',').forEach(hId => { let hEl = document.getElementById(hId.trim()); if (hEl) kabloEkle(document.getElementById(f.id_str).querySelector('.node-out'), hEl.querySelector('.node-in'), "#e67e22", f.aktif, false, f.id_str); }); 
-        if (f.ekTip && f.ekTip !== "yok") { let kEl = document.getElementById(`kont_${f.id_str}_0`); if(kEl) kabloEkle(kEl.querySelector('.node-out'), document.getElementById(f.id_str).querySelector('.node-in'), f.ekTip==="merkez"?"#1b1464":"#00a8ff", f.aktif, true, `kont_${f.id_str}_0`); }
-    });
-    makinalar.forEach(m => {
-        if (m.ekler) { m.ekler.forEach((ek, i) => { if (ek.tip && ek.tip !== "yok") { let kEl = document.getElementById(`kont_${m.id_str}_${i}`); if(kEl) kabloEkle(kEl.querySelector('.node-out'), document.getElementById(m.id_str).querySelector('.node-in'), ek.tip==="merkez"?"#1b1464":"#00a8ff", m.aktif, true, `kont_${m.id_str}_${i}`); } }); }
-    });
-}
-
-// 60FPS Dinamik Çizgi Motoru: Kutu animasyonla büyüse bile çizgiler kopmaz!
-function svgDinamikTakip() {
+// SVG ile Çizgileri Bir Kere Oluşturur (veya sadece yer değiştiğinde)
+function akisCizgileriniGuncelleSVG() {
+    let svgIcerik = ""; // Tüm yolları HTML string olarak toplayıp tek seferde DOM'a basacağız (Çok Hızlıdır)
     const rS = sahne.getBoundingClientRect();
-    aktifSvgKablolar.forEach(bag => {
-        let nK = bag.kNode;
-        if (!bag.isKont && bag.kId.startsWith('silo')) {
-            let menu = nK.closest('.silo-yaprak-menu');
-            if (menu && !menu.classList.contains('acik')) { nK = document.getElementById(bag.kId).querySelector('.silo-ana-node'); }
-        }
-        if(!nK || !bag.gNode) return;
 
-        const rC = nK.getBoundingClientRect(); const rG = bag.gNode.getBoundingClientRect();
+    function pathUret(kaynakId, hedefId, aktifRenk, kaynakAktif, kanalIndex, isKonteyner = false) {
+        const kaynak = document.getElementById(kaynakId); const hedef = document.getElementById(hedefId);
+        if (!kaynak || !hedef) return "";
+        
+        let hedefAktif = isKonteyner ? true : ((hedef.dataset.tip === "firin") ? firinlar[hedef.dataset.index].aktif : makinalar[hedef.dataset.index].aktif);
+        
+        let c = kaynak.querySelector(`.node-out[data-kanal="${kanalIndex}"]`) || kaynak.querySelector('.node-out');
+        if (!isKonteyner) {
+            let yaprakMenu = kaynak.querySelector('.silo-yaprak-menu');
+            if (yaprakMenu && !yaprakMenu.classList.contains('acik')) { c = kaynak.querySelector('.silo-ana-node'); }
+        }
+
+        let g = hedef.querySelector('.node-in');
+        const rC = c.getBoundingClientRect(); const rG = g.getBoundingClientRect();
+        
         const sX = (rC.left - rS.left + rC.width / 2) / scale; const sY = (rC.top - rS.top + rC.height / 2) / scale;
         const eX = (rG.left - rS.left + rG.width / 2) / scale; const eY = (rG.top - rS.top + rG.height / 2) / scale;
-        bag.path.setAttribute("d", `M ${sX} ${sY} C ${(sX+eX)/2} ${sY}, ${(sX+eX)/2} ${eY}, ${eX} ${eY}`);
+        
+        const pathData = `M ${sX} ${sY} C ${(sX+eX)/2} ${sY}, ${(sX+eX)/2} ${eY}, ${eX} ${eY}`;
+        const isActive = kaynakAktif && hedefAktif;
+        const className = isActive ? "svg-kablo svg-kablo-aktif" : "svg-kablo svg-kablo-pasif";
+        const strokeColor = isActive ? aktifRenk : ""; // pasif renk CSS'den gelir
+        
+        return `<path d="${pathData}" class="${className}" style="stroke: ${strokeColor};"></path>`;
+    }
+
+    silolar.forEach(s => { s.kanallar.forEach((kanal, kIdx) => { if (kanal && kanal !== "Boş") kanal.split(',').forEach(hId => { svgIcerik += pathUret(s.id_str, hId.trim(), kanalRenkleri[kIdx], s.aktif, kIdx); }); }); });
+    firinlar.forEach(f => { 
+        if (f.hedef && f.hedef !== "Boş") f.hedef.split(',').forEach(hId => { svgIcerik += pathUret(f.id_str, hId.trim(), "#e67e22", f.aktif, 0); }); 
+        if (f.ekTip && f.ekTip !== "yok") svgIcerik += pathUret(`kont_${f.id_str}_0`, f.id_str, f.ekTip==="merkez"?"#1b1464":"#00a8ff", f.aktif, 0, true);
     });
-    requestAnimationFrame(svgDinamikTakip);
+    makinalar.forEach(m => {
+        if(m.ekler) { m.ekler.forEach((ek, i) => { if (ek.tip && ek.tip !== "yok") svgIcerik += pathUret(`kont_${m.id_str}_${i}`, m.id_str, ek.tip==="merkez"?"#1b1464":"#00a8ff", m.aktif, 0, true); }); }
+    });
+
+    svgAlan.innerHTML = svgIcerik; // Ekrana çiz
 }
 
 
 // --- 7. ÇEKMECE PANELİ (SIDEBAR) VE AKILLI LİSTE ---
 window.baglantiSilGlobal = function(kaynakId, hedefId) {
-    silolar.forEach((s, idx) => { s.kanallar.forEach((k, kIdx) => { if(bagVarMi(k, hedefId)) { let hList = k.split(',').map(x=>x.trim()).filter(x => x !== hedefId); silolar[idx].kanallar[kIdx] = hList.length > 0 ? hList.join(', ') : "Boş"; } }); });
-    firinlar.forEach((f, idx) => { if(bagVarMi(f.hedef, hedefId)) { let hList = f.hedef.split(',').map(x=>x.trim()).filter(x => x !== hedefId); firinlar[idx].hedef = hList.length > 0 ? hList.join(', ') : "Boş"; } });
+    silolar.forEach((s, idx) => { if(s.id_str === kaynakId) { s.kanallar.forEach((k, kIdx) => { if(k) { let hList = k.split(',').map(x=>x.trim()).filter(x => x !== hedefId); silolar[idx].kanallar[kIdx] = hList.length > 0 ? hList.join(', ') : "Boş"; } }); } });
+    firinlar.forEach((f, idx) => { if(f.id_str === kaynakId) { if(f.hedef) { let hList = f.hedef.split(',').map(x=>x.trim()).filter(x => x !== hedefId); firinlar[idx].hedef = hList.length > 0 ? hList.join(', ') : "Boş"; } } });
     verileriKaydet(); ekranlariCiz();
     document.getElementById('ayar-paneli').classList.remove('acik');
 };
@@ -338,7 +334,7 @@ document.addEventListener('click', (e) => {
     if (t.classList.contains('goto-cihaz')) { cihazaGit(t.dataset.target); return; }
     if (t.classList.contains('btn-kopar') || t.classList.contains('node-out') || t.classList.contains('node-in') || t.closest('#kontrol-paneli') || t.closest('.audit-toast')) return; 
 
-    if (t.classList.contains('silo-ana-node')) { t.nextElementSibling.classList.toggle('acik'); return; }
+    if (t.classList.contains('silo-ana-node')) { t.nextElementSibling.classList.toggle('acik'); akisCizgileriniGuncelleSVG(); return; }
 
     if (t.id === "btn-recete-yukle") {
         let seciliUrun = document.getElementById('modal-recete-secici').value;
@@ -350,9 +346,8 @@ document.addEventListener('click', (e) => {
             document.getElementById('modal-ek-tip-3').value = rEkler[2].tip; document.getElementById('modal-ek-malzeme-3').value = rEkler[2].veri;
             
             let mId = document.getElementById('modal-kaydet').dataset.hedefid;
-            silolar.forEach(s => s.kanallar.forEach((k,i) => { if(bagVarMi(k, mId)) s.kanallar[i] = k.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; }));
-            firinlar.forEach(f => { if(bagVarMi(f.hedef, mId)) f.hedef = f.hedef.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; });
-            
+            silolar.forEach(s => s.kanallar.forEach((k,i) => { if(k && k.includes(mId)) s.kanallar[i] = k.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; }));
+            firinlar.forEach(f => { if(f.hedef && f.hedef.includes(mId)) f.hedef = f.hedef.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; });
             r.firinlar.forEach(fId => { let f = firinlar.find(x=>x.id_str===fId); if(f) f.hedef = (f.hedef==="Boş"||f.hedef==="") ? mId : f.hedef + ", " + mId; });
             r.silolar.forEach(sId => { let s = silolar.find(x=>x.id_str===sId); if(s) { let ch = s.kanallar.findIndex(x=>x==="Boş"||x===""); if(ch===-1)ch=0; s.kanallar[ch] = (s.kanallar[ch]==="Boş"||s.kanallar[ch]==="")?mId:s.kanallar[ch]+", "+mId; } });
             
@@ -374,8 +369,8 @@ document.addEventListener('click', (e) => {
         const kutu = t.closest('.kutu'); const tip = kutu.dataset.tip; const seciliIndex = parseInt(kutu.dataset.index);
         
         let gelenler = [];
-        silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${s.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">${s.kod}</span></li>`); }); });
-        firinlar.forEach(f => { if(bagVarMi(f.hedef, kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">Isı: ${f.sicaklik}</span></li>`); });
+        silolar.forEach(s => { s.kanallar.forEach(k => { if(k && k.includes(kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${s.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">${s.kod}</span></li>`); }); });
+        firinlar.forEach(f => { if(f.hedef && f.hedef.includes(kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:10px;">Isı: ${f.sicaklik}</span></li>`); });
         document.getElementById('gelen-listesi').innerHTML = gelenler.join('') || "<li>Henüz giriş yok.</li>";
 
         document.getElementById('silo-kanallari-inputlari').style.display = "none"; document.getElementById('firin-hedef-inputu').style.display = "none";
@@ -411,7 +406,7 @@ document.addEventListener('click', (e) => {
             document.getElementById('modal-recete-secici').innerHTML = rHtml;
         }
         
-        document.getElementById('ayar-paneli').classList.add('acik'); 
+        document.getElementById('ayar-paneli').classList.add('acik'); // YENİ: KAYAR ÇEKMECEYİ AÇ
         
         document.getElementById('modal-kaydet').onclick = () => {
             const veri = document.getElementById('modal-input-veri').value;
@@ -427,7 +422,7 @@ document.addEventListener('click', (e) => {
                 makinalar[seciliIndex].ekler[1].tip = document.getElementById('modal-ek-tip-2').value; makinalar[seciliIndex].ekler[1].veri = document.getElementById('modal-ek-malzeme-2').value;
                 makinalar[seciliIndex].ekler[2].tip = document.getElementById('modal-ek-tip-3').value; makinalar[seciliIndex].ekler[2].veri = document.getElementById('modal-ek-malzeme-3').value;
                 if (veri && veri.trim() !== "" && veri !== "Belirlenmedi") {
-                    let mId = makinalar[seciliIndex].id_str; let bgFirinlar = firinlar.filter(f => bagVarMi(f.hedef, mId)).map(f => f.id_str); let bgSilolar = silolar.filter(s => s.kanallar.some(k => bagVarMi(k, mId))).map(s => s.id_str);
+                    let mId = makinalar[seciliIndex].id_str; let bgFirinlar = firinlar.filter(f => f.hedef.includes(mId)).map(f => f.id_str); let bgSilolar = silolar.filter(s => s.kanallar.some(k => k && k.includes(mId))).map(s => s.id_str);
                     receteler[veri] = { firinlar: bgFirinlar, silolar: bgSilolar, ekler: JSON.parse(JSON.stringify(makinalar[seciliIndex].ekler)) };
                 }
             }
@@ -442,7 +437,6 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener("DOMContentLoaded", () => { 
     ekranlariCiz(); 
-    svgDinamikTakip(); // 60FPS Kablo Motorunu Başlat
     const btnKilitle = document.getElementById('btn-kilitle');
     btnKilitle.onclick = function() {
         konumlarKilitli = !konumlarKilitli;
