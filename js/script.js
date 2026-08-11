@@ -37,7 +37,6 @@ function verileriKaydet() {
     localStorage.setItem('bbp_makinalar', JSON.stringify(makinalar)); localStorage.setItem('bbp_receteler', JSON.stringify(receteler));
 }
 
-// YENİ V4.3: VARSAYILAN OLARAK KİLİTLİ BAŞLASIN
 let konumlarKilitli = true;
 
 function bagVarMi(kanalStr, id) {
@@ -139,19 +138,35 @@ function olusturHTML(veri, tip, index, ikon) {
     return anaKutuHtml + konteynerHtml;
 }
 
-// --- 4. PAN/ZOOM VE KAMERA (YENİ: PINCH-TO-ZOOM MOTORU) ---
+// --- 4. PAN/ZOOM VE KAMERA (YENİLİK: ZOOM ESNASINDA ÇİZGİLER GİZLENİR!) ---
 document.getElementById('panel-baslik').onclick = function() { document.getElementById('kontrol-paneli').classList.toggle('acik'); };
 const sahne = document.getElementById('sahne');
 let scale = 1; let panX = 0; let panY = 0;
-document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(scale * 1.5, 3); statikSVGZorlaCiz(); guncelleSahne(); };
-document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(scale * 0.4, 0.2); statikSVGZorlaCiz(); guncelleSahne(); };
+
+// Çizgilerin şeffaflık (görünmezlik) animasyonu için CSS takviyesi (JS ile atandı)
+const svgAlan = document.getElementById('cizim-alani');
+svgAlan.style.transition = "opacity 0.2s ease";
+
+document.getElementById('btn-zoom-in').onclick = () => { 
+    svgAlan.style.opacity = "0"; // GİZLE
+    scale = Math.min(scale * 1.5, 3); guncelleSahne(); 
+    setTimeout(() => { statikSVGZorlaCiz(); svgAlan.style.opacity = "1"; }, 250); // ÇİZ VE GÖSTER
+};
+document.getElementById('btn-zoom-out').onclick = () => { 
+    svgAlan.style.opacity = "0"; // GİZLE
+    scale = Math.max(scale * 0.4, 0.2); guncelleSahne(); 
+    setTimeout(() => { statikSVGZorlaCiz(); svgAlan.style.opacity = "1"; }, 250); // ÇİZ VE GÖSTER
+};
 function guncelleSahne() { sahne.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; document.getElementById('zoom-seviyesi').innerText = Math.round(scale * 100) + '%'; }
 
 function cihazaGit(hedefIdStr) {
     const hedef = document.getElementById(hedefIdStr); if (!hedef) return;
+    svgAlan.style.opacity = "0"; // GİZLE
     const w = document.getElementById('fabrika-sahasi').offsetWidth; const h = document.getElementById('fabrika-sahasi').offsetHeight;
     panX = (w / 2) - ((parseInt(hedef.style.left) + 65) * scale); panY = (h / 2) - ((parseInt(hedef.style.top) + 60) * scale);
-    statikSVGZorlaCiz(); guncelleSahne(); hedef.classList.add('dokunuldu'); setTimeout(()=>hedef.classList.remove('dokunuldu'), 3000);
+    guncelleSahne(); 
+    setTimeout(() => { statikSVGZorlaCiz(); svgAlan.style.opacity = "1"; }, 250); // ÇİZ VE GÖSTER
+    hedef.classList.add('dokunuldu'); setTimeout(()=>hedef.classList.remove('dokunuldu'), 3000);
 }
 
 // --- 5. TIKLAMA, SÜRÜKLEME VE PINCH-TO-ZOOM MOTORU ---
@@ -159,15 +174,13 @@ let isPanning = false; let baslangicPanX = 0; let baslangicPanY = 0;
 let suruklenenKutu = null; let offset = { x: 0, y: 0 }; 
 let bekleyenCikisNoktasi = null; let startX = 0, startY = 0; let suruklemeYapildi = false; 
 
-// Pinch-to-Zoom Değişkenleri
 let isPinching = false; let initialPinchDistance = null; let initialScale = 1;
-
 let svgAnimasyonFrame = null; let motorCalisiyor = false;
 
 function motoruUyandir() { if (!motorCalisiyor) { motorCalisiyor = true; svgDinamikTakip(); } }
 function motoruUyut() { if (motorCalisiyor) { cancelAnimationFrame(svgAnimasyonFrame); motorCalisiyor = false; statikSVGZorlaCiz(); } }
 let geciciUyanmaTimer = null;
-function motoruGeciciUyandir(sure = 400) { motoruUyandir(); if(geciciUyanmaTimer) clearTimeout(geciciUyanmaTimer); geciciUyanmaTimer = setTimeout(() => { if (!suruklenenKutu) motoruUyut(); }, sure); }
+function motoruGeciciUyandir(sure = 400) { motoruUyandir(); if(geciciUyanmaTimer) clearTimeout(geciciUyanmaTimer); geciciUyanmaTimer = setTimeout(() => { if (!suruklenenKutu && !isPinching) motoruUyut(); }, sure); }
 
 let auditBekleyenSiloId = null;
 function tetikleAudit(siloId) {
@@ -191,23 +204,21 @@ function baglantiEkle(kaynakKutu, kanalIndex, hedefIdStr) {
     verileriKaydet();
 }
 
-function getPinchDistance(touches) {
-    return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-}
+function getPinchDistance(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
 
 function handleStart(e) {
     if (e.target.closest('#kontrol-paneli') || e.target.closest('.yan-panel') || e.target.closest('.audit-toast')) return;
     
-    // Pinch-to-Zoom Başlangıcı (İki Parmak)
+    // YENİ V4.4: Pinch (Zoom) başlarken Çizgileri GİZLE! Hesaplama YAPMA!
     if (e.touches && e.touches.length === 2) {
         isPinching = true; isPanning = false; suruklenenKutu = null;
         initialPinchDistance = getPinchDistance(e.touches);
         initialScale = scale;
+        svgAlan.style.opacity = "0"; // GİZLE
         return;
     }
 
     const t = e.target;
-    
     if (t.classList.contains('node-out')) {
         e.preventDefault();
         if (bekleyenCikisNoktasi === t) { bekleyenCikisNoktasi.classList.remove('node-secili'); bekleyenCikisNoktasi = null; return; }
@@ -230,7 +241,6 @@ function handleStart(e) {
         kutu.classList.toggle('dokunuldu'); motoruGeciciUyandir(); 
     }
 
-    // EĞER SİSTEM KİLİTLİYSE SÜRÜKLEMEYE İZİN VERME (SADECE PAN YAPAR)
     if (kutu && !t.matches('button') && !t.classList.contains('ayar-btn') && !t.classList.contains('goto-cihaz') && !t.classList.contains('silo-ana-node') && !konumlarKilitli) {
         suruklenenKutu = kutu; offset.x = (pos.x - kutu.getBoundingClientRect().left) / scale; offset.y = (pos.y - kutu.getBoundingClientRect().top) / scale; kutu.style.zIndex = 1000;
         motoruUyandir(); 
@@ -242,14 +252,14 @@ function handleStart(e) {
 }
 
 function handleMove(e) {
-    if (e.cancelable) e.preventDefault(); // Sayfanın kaymasını engelle
+    if (e.cancelable) e.preventDefault(); 
 
-    // Pinch-to-Zoom Hareketi
+    // YENİ V4.4: Pinch (Zoom) sırasında HİÇBİR çizgi hesabı yapma!
     if (isPinching && e.touches.length === 2) {
         const currentDistance = getPinchDistance(e.touches);
         let newScale = initialScale * (currentDistance / initialPinchDistance);
-        scale = Math.min(Math.max(newScale, 0.2), 3); // 0.2 ile 3x arası kısıtlama
-        statikSVGZorlaCiz(); guncelleSahne();
+        scale = Math.min(Math.max(newScale, 0.2), 3);
+        guncelleSahne(); // Sadece fiziksel ekranı CSS ile büyütür. (Sıfır CPU Yükü)
         return;
     }
 
@@ -269,7 +279,14 @@ function handleMove(e) {
 }
 
 function handleEnd(e) {
-    if (e.touches && e.touches.length < 2) isPinching = false;
+    // YENİ V4.4: Pinch bittiğinde 1 KEZ hesapla ve çizgileri GÖSTER!
+    if (e.touches && e.touches.length < 2) {
+        if(isPinching) { 
+            isPinching = false; 
+            statikSVGZorlaCiz(); // Sadece 1 kez kusursuz hesabı yap
+            svgAlan.style.opacity = "1"; // Gizli çizgileri görünür yap
+        }
+    }
     isPanning = false;
     
     if (suruklenenKutu && !konumlarKilitli) {
@@ -290,14 +307,12 @@ function handleEnd(e) {
     setTimeout(() => { suruklemeYapildi = false; }, 50);
 }
 
-// "passive: false" kuralı, e.preventDefault() komutunun çalışıp sayfa kaymasını engellemesi için şarttır (Özellikle Pinch-to-zoom için).
 document.addEventListener('mousedown', handleStart, {passive: false}); document.addEventListener('mousemove', handleMove, {passive: false}); document.addEventListener('mouseup', handleEnd);
 document.addEventListener('touchstart', handleStart, {passive: false}); document.addEventListener('touchmove', handleMove, {passive: false}); document.addEventListener('touchend', handleEnd);
 
 
 // --- 6. SVG ÇİZİM MOTORU ---
 const kanalRenkleri = ["#f1c40f", "#3498db", "#e74c3c", "#bdc3c7"]; 
-const svgAlan = document.getElementById('cizim-alani');
 let aktifSvgKablolar = []; 
 
 function svgKablolariHazirla() {
@@ -400,6 +415,7 @@ document.addEventListener('click', (e) => {
             let mId = document.getElementById('modal-kaydet').dataset.hedefid;
             silolar.forEach(s => s.kanallar.forEach((k,i) => { if(bagVarMi(k, mId)) s.kanallar[i] = k.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; }));
             firinlar.forEach(f => { if(bagVarMi(f.hedef, mId)) f.hedef = f.hedef.split(',').map(x=>x.trim()).filter(x=>x!==mId).join(', ') || "Boş"; });
+            
             r.firinlar.forEach(fId => { let f = firinlar.find(x=>x.id_str===fId); if(f) f.hedef = (f.hedef==="Boş"||f.hedef==="") ? mId : f.hedef + ", " + mId; });
             r.silolar.forEach(sId => { let s = silolar.find(x=>x.id_str===sId); if(s) { let ch = s.kanallar.findIndex(x=>x==="Boş"||x===""); if(ch===-1)ch=0; s.kanallar[ch] = (s.kanallar[ch]==="Boş"||s.kanallar[ch]==="")?mId:s.kanallar[ch]+", "+mId; } });
             
@@ -494,11 +510,10 @@ document.addEventListener('click', (e) => {
     if (t.id === "modal-kapat" || t.id === "modal-kapat-alt") { document.getElementById('ayar-paneli').classList.remove('acik'); }
 });
 
-// AÇILIŞ: SİSTEM KİLİTLİ BAŞLAR VE KİLİT BUTONU YEŞİL (GÜVENLİ) OLUR
 document.addEventListener("DOMContentLoaded", () => { 
     ekranlariCiz(); 
     const btnKilitle = document.getElementById('btn-kilitle');
-    btnKilitle.className = "kilit-kapali"; btnKilitle.innerText = "🔒 Konumlar Kilitli"; // Başlangıç durumu
+    btnKilitle.className = "kilit-kapali"; btnKilitle.innerText = "🔒 Konumlar Kilitli"; 
     btnKilitle.onclick = function() {
         konumlarKilitli = !konumlarKilitli;
         if (konumlarKilitli) { this.className = "kilit-kapali"; this.innerText = "🔒 Konumlar Kilitli"; } 
