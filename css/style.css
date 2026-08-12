@@ -43,8 +43,8 @@ body { margin: 0; background: var(--bg); color: var(--text); overflow: hidden; u
 .ayar-btn:active { transform:scale(0.9); }
 
 .kutu-gizli-detay { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease; }
-.kutu:hover, .kutu.dokunuldu { width: 190px; z-index: 100 !important; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
-.kutu:hover .kutu-gizli-detay, .kutu.dokunuldu .kutu-gizli-detay { max-height: 500px; opacity: 1; margin-top: 8px; }
+.kutu:hover, .kutu.dokunuldu { width: 220px; z-index: 100 !important; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+.kutu:hover .kutu-gizli-detay, .kutu.dokunuldu .kutu-gizli-detay { max-height: 600px; opacity: 1; margin-top: 8px; }
 
 .seyyar-konteyner { width: 90px; padding: 6px; background: linear-gradient(145deg, #ecf0f1, #bdc3c7); color: #2c3e50; border: 3px solid #3498db; border-radius: 10px; z-index: 15; font-size: 10px; cursor: grab; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.6); position: absolute; transition: transform 0.2s;}
 .seyyar-konteyner:hover, .seyyar-konteyner.dokunuldu { width: 140px; z-index: 105 !important; }
