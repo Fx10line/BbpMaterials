@@ -46,7 +46,7 @@ function getCihazIsim(idStr) {
     let m = makinalar.find(x => x.id_str === idStr); if (m) return m.isim; return null;
 }
 
-// --- 2. ZİNCİR ÖZETİ (TAM KALITIM: KONTEYNERLER ZİNCİRE DAHİL EDİLDİ) ---
+// --- 2. ZİNCİR ÖZETİ (TAM KALITIM: KONTEYNERLER SİLO GİBİ İŞLENİR) ---
 function hoverOzetUret(veri, tip) {
     let html = ""; let zincir = []; 
     
@@ -56,41 +56,41 @@ function hoverOzetUret(veri, tip) {
         if(out.length > 0) html += `📤 Hedef: ${[...new Set(out)].join(', ')}`;
     } 
     else if (tip === "firin") {
-        // Silo Hatları
+        let kaynakBulundu = false;
         silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, veri.id_str)) { 
+            kaynakBulundu = true;
             zincir.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ Fırın<br><span style="color:#f39c12; font-size:10px; font-weight:bold;">${s.materyal} (Kod: ${s.kod})</span>`); 
         }})});
         
-        // Fırının Kendi Ek Konteyneri
         if (veri.ekTip && veri.ekTip !== "yok" && veri.ekVeri !== "") {
+            kaynakBulundu = true;
             zincir.push(`📥 <b>Konteyner (${veri.ekTip})</b> ➔ Fırın<br><span style="color:#00d2d3; font-size:10px; font-weight:bold;">${veri.ekVeri}</span>`);
         }
         
-        if(zincir.length > 0) html += `<b>Gelen Hatlar:</b><br>${zincir.join('<br><br>')}`; 
+        if(kaynakBulundu) html += `<b>Gelen Hatlar:</b><br>${zincir.join('<br><br>')}`; 
         else html += `📥 <b>Gelen Hat:</b> <span style="color:#e74c3c">Yok</span>`;
     } 
     else if (tip === "makina") {
-        // Fırın Hatları ve Fırının Taşıdığı Ek Konteynerler
         firinlar.forEach(f => { if(bagVarMi(f.hedef, veri.id_str)) {
-            let sBulundu = false; 
+            let fKaynakBulundu = false; 
+            
             silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, f.id_str)) { 
-                sBulundu = true; 
+                fKaynakBulundu = true; 
                 zincir.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span><br><span style="color:#f39c12; font-size:10px; font-weight:bold;">${s.materyal} (Kod: ${s.kod})</span>`); 
             }})});
-            if(!sBulundu) zincir.push(`📥 <span style="color:#e74c3c">? (Silo Yok)</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`);
             
-            // Eğer fırında konteyner varsa makineye onu da göster!
             if (f.ekTip && f.ekTip !== "yok" && f.ekVeri !== "") {
+                fKaynakBulundu = true;
                 zincir.push(`📥 <b>Konteyner (${f.ekTip})</b> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span><br><span style="color:#00d2d3; font-size:10px; font-weight:bold;">${f.ekVeri}</span>`);
             }
+
+            if(!fKaynakBulundu) zincir.push(`📥 <span style="color:#e74c3c">Kaynak Yok</span> ➔ <span class="goto-cihaz" data-target="${f.id_str}">${f.isim}</span>`);
         }});
         
-        // Direkt Silo Hatları
         silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, veri.id_str)) { 
             zincir.push(`📥 <span class="goto-cihaz" data-target="${s.id_str}">${s.isim}</span> ➔ Direkt<br><span style="color:#f39c12; font-size:10px; font-weight:bold;">${s.materyal} (Kod: ${s.kod})</span>`); 
         }})});
         
-        // Makinenin Kendi Ek Konteynerleri
         if (veri.ekler) {
             veri.ekler.forEach((ek, i) => {
                 if (ek.tip && ek.tip !== "yok" && ek.veri !== "") {
@@ -426,7 +426,7 @@ function svgDinamikTakip() {
     svgAnimasyonFrame = requestAnimationFrame(svgDinamikTakip);
 }
 
-// --- 7. DETAYLI AYARLAR ÇEKMECESİ VE TAM ZİNCİR KALITIMI ---
+// --- 7. DETAYLI AYARLAR ÇEKMECESİ VE TAM ZİNCİR LİSTELEME ---
 window.baglantiSilGlobal = function(kaynakId, hedefId) {
     silolar.forEach((s, idx) => { s.kanallar.forEach((k, kIdx) => { if(bagVarMi(k, hedefId)) { let hList = k.split(',').map(x=>x.trim()).filter(x => x !== hedefId); silolar[idx].kanallar[kIdx] = hList.length > 0 ? hList.join(', ') : "Boş"; } }); });
     firinlar.forEach((f, idx) => { if(bagVarMi(f.hedef, hedefId)) { let hList = f.hedef.split(',').map(x=>x.trim()).filter(x => x !== hedefId); firinlar[idx].hedef = hList.length > 0 ? hList.join(', ') : "Boş"; } });
@@ -459,30 +459,33 @@ document.addEventListener('click', (e) => {
         const kutu = t.closest('.kutu'); const tip = kutu.dataset.tip; const seciliIndex = parseInt(kutu.dataset.index);
         
         let gelenler = [];
+        
         silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, kutu.id)) gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b> (Kod: <b>${s.kod}</b>)<button class="btn-kopar" onclick="baglantiSilGlobal('${s.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e67e22; font-weight:bold;">${s.materyal}</span></li>`); }); });
         
         firinlar.forEach(f => { if(bagVarMi(f.hedef, kutu.id)) {
-            let bagliSilolar = []; silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, f.id_str)) { bagliSilolar.push({isim: s.isim, kod: s.kod, mat: s.materyal}); } }); });
-            if (bagliSilolar.length > 0) {
-                bagliSilolar.forEach(bSilo => {
-                    gelenler.push(`<li class="liste-satiri"><b>${bSilo.isim}</b> ➔ <b>${f.isim}</b> (Kod: <b>${bSilo.kod}</b>)<button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e74c3c;">Fırın Isısı: ${f.sicaklik}</span><br><span style="font-size:11px; color:#e67e22; font-weight:bold;">${bSilo.mat}</span></li>`);
-                });
-            } else {
-                gelenler.push(`<li class="liste-satiri"><b>Bilinmeyen</b> ➔ <b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e74c3c;">Fırın Isısı: ${f.sicaklik}</span></li>`); 
-            }
+            let kaynakBulundu = false;
             
-            // FIRININ KENDİ EK KONTEYNERİNİ MAKİNEYE DE LİSTELE!
+            silolar.forEach(s => { s.kanallar.forEach(k => { if(bagVarMi(k, f.id_str)) { 
+                kaynakBulundu = true;
+                gelenler.push(`<li class="liste-satiri"><b>${s.isim}</b> ➔ <b>${f.isim}</b> (Kod: <b>${s.kod}</b>)<button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e74c3c;">Fırın Isısı: ${f.sicaklik}</span><br><span style="font-size:11px; color:#e67e22; font-weight:bold;">${s.materyal}</span></li>`);
+            }});});
+
             if (f.ekTip && f.ekTip !== "yok" && f.ekVeri !== "") {
-                gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Ek Konteyner (${f.ekTip})</b> ➔ <b>${f.isim}</b><br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${f.ekVeri}</span></li>`);
+                kaynakBulundu = true;
+                gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Konteyner (${f.ekTip})</b> ➔ <b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e74c3c;">Fırın Isısı: ${f.sicaklik}</span><br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${f.ekVeri}</span></li>`);
+            }
+
+            if (!kaynakBulundu) {
+                gelenler.push(`<li class="liste-satiri"><span style="color:#e74c3c"><b>Kaynak Yok</b></span> ➔ <b>${f.isim}</b><button class="btn-kopar" onclick="baglantiSilGlobal('${f.id_str}', '${kutu.id}')">X Sil</button><br><span style="font-size:11px; color:#e74c3c;">Fırın Isısı: ${f.sicaklik}</span></li>`); 
             }
         }});
 
         if (tip === "makina") {
             let mEkler = makinalar[seciliIndex].ekler;
-            mEkler.forEach((ek, i) => { if (ek.tip !== "yok" && ek.veri !== "") { gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Ek Konteyner ${i+1}</b> (${ek.tip}) ➔ Makina<br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${ek.veri}</span></li>`); } });
+            mEkler.forEach((ek, i) => { if (ek.tip !== "yok" && ek.veri !== "") { gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Konteyner ${i+1}</b> (${ek.tip}) ➔ Makina<br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${ek.veri}</span></li>`); } });
         } else if (tip === "firin") {
             let fEkTip = firinlar[seciliIndex].ekTip; let fEkVeri = firinlar[seciliIndex].ekVeri;
-            if (fEkTip !== "yok" && fEkVeri !== "") { gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Ek Konteyner</b> (${fEkTip}) ➔ Fırın<br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${fEkVeri}</span></li>`); }
+            if (fEkTip !== "yok" && fEkVeri !== "") { gelenler.push(`<li class="liste-satiri" style="background:#e8f4f8; border-color:#3498db;">➕ <b>Konteyner</b> (${fEkTip}) ➔ Fırın<br><span style="font-size:12px; color:#2980b9; font-weight:bold;">${fEkVeri}</span></li>`); }
         }
 
         document.getElementById('gelen-listesi').innerHTML = gelenler.join('') || "<li>Henüz giriş yok.</li>";
