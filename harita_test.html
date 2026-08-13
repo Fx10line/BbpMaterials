@@ -2,113 +2,263 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBP SCADA V6 - Layout Prototipi</title>
+    <!-- Ekrana parmakla yanlışlıkla zoom yapılmasını kesin engeller -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BBP SCADA V6 - Mobil</title>
     <style>
-        body { margin: 0; background-color: #0f1115; color: #ecf0f1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        
-        /* Arka plan ızgarası */
-        #scada-map {
-            width: 1400px; height: 900px; position: relative; margin: 20px auto;
-            background-image: radial-gradient(#333 1px, transparent 1px);
-            background-size: 30px 30px;
-            border: 2px solid #2c3e50; border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        :root {
+            --bg-dark: #0b0c10; --grid-color: rgba(255, 255, 255, 0.05);
+            --machine-green: linear-gradient(145deg, #78e08f, #38ada9);
+            --machine-border: #b8e994;
+            --silo-metal: radial-gradient(circle at 30% 30%, #ecf0f1, #95a5a6, #2c3e50);
+            --oven-body: linear-gradient(to right, #bdc3c7, #7f8c8d);
+            --oven-motor: linear-gradient(to top, #e67e22, #d35400);
+            --pipe-main: #00d2d3; --pipe-glow: 0 0 10px #00d2d3, 0 0 15px #00d2d3;
+            --text-light: #ecf0f1;
         }
 
-        /* Bölge (Halle) Çerçeveleri */
-        .zone { position: absolute; border: 2px dashed rgba(52, 152, 219, 0.4); border-radius: 8px; background: rgba(52, 152, 219, 0.05); }
-        .zone-title { position: absolute; top: -12px; left: 20px; background: #0f1115; padding: 0 10px; color: #3498db; font-weight: bold; font-size: 14px; letter-spacing: 1px;}
-        
-        #zone-silos { width: 300px; height: 200px; left: 50px; bottom: 80px; }
-        #zone-1700 { width: 400px; height: 160px; left: 350px; top: 50px; }
-        #zone-halle { width: 600px; height: 450px; right: 50px; top: 250px; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { margin: 0; background-color: var(--bg-dark); color: var(--text-light); overflow: hidden; touch-action: none; overscroll-behavior: none; }
 
-        /* Silolar (Sistemin Kalbi) */
-        .silo-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 25px 15px; }
-        .silo { width: 35px; height: 35px; background: #34495e; border-radius: 50%; border: 2px solid #bdc3c7; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;}
-
-        /* Makineler */
-        .machine { position: absolute; background: linear-gradient(145deg, #10ac84, #1dd1a1); border: 2px solid #0be881; border-radius: 6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        /* MOBİL UYUMLU ÜST BAR */
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: rgba(11, 12, 16, 0.95); border-bottom: 2px solid #1e272e; z-index: 2000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; backdrop-filter: blur(10px); }
+        .logo { font-size: 16px; font-weight: bold; color: var(--pipe-main); text-shadow: 0 0 10px var(--pipe-main); line-height: 1.1; }
         
-        /* Bereich 1700 Makineleri (Büyük) */
-        .m1700 { width: 120px; height: 60px; }
-        
-        /* Halle Makineleri (Standart) */
-        .m-std { width: 80px; height: 40px; }
-        .m-vertical { width: 40px; height: 80px; }
+        /* Parmak dostu büyük butonlar */
+        .controls { display: flex; gap: 5px; align-items: center; }
+        .controls button { background: #2f3640; color: white; border: 1px solid #718093; padding: 12px 15px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+        .controls button:active { background: var(--pipe-main); color: #000; }
 
-        /* ANA OMURGA (Ciks Boru Hattı) */
-        .pipe { position: absolute; background: #00d2d3; box-shadow: 0 0 15px #00d2d3; z-index: 5; opacity: 0.8;}
-        .pipe-h { height: 6px; }
-        .pipe-v { width: 6px; }
-        .pipe-flow { animation: flowAnim 2s linear infinite; background: linear-gradient(90deg, #00d2d3, #fff, #00d2d3); background-size: 200% 100%;}
-        
-        @keyframes flowAnim { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+        #scada-viewport { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+        #scada-canvas { width: 4500px; height: 3500px; position: absolute; top: 0; left: 0; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 50px 50px; transform-origin: 0 0; }
 
+        /* BÖLGELER & BORULAR */
+        .zone { position: absolute; border: 2px dashed rgba(52, 152, 219, 0.4); border-radius: 10px; background: rgba(52, 152, 219, 0.03); pointer-events: none;}
+        .zone-label { position: absolute; top: -12px; left: 20px; background: var(--bg-dark); padding: 0 10px; color: #3498db; font-size: 14px; font-weight: bold; }
+        .pipe { position: absolute; background: var(--pipe-main); box-shadow: var(--pipe-glow); z-index: 1; pointer-events: none;}
+        .pipe-h { height: 6px; } .pipe-v { width: 6px; }
+        .flow-h { background: linear-gradient(90deg, #00d2d3 25%, #fff 50%, #00d2d3 75%); background-size: 200% 100%; animation: flowH 1s linear infinite; }
+        .flow-v { background: linear-gradient(180deg, #00d2d3 25%, #fff 50%, #00d2d3 75%); background-size: 100% 200%; animation: flowV 1s linear infinite; }
+        @keyframes flowH { to { background-position: -200% 0; } } @keyframes flowV { to { background-position: 0 -200%; } }
+
+        /* CİHAZLAR VE MOBİL HOVER/TAP BİLGİSİ */
+        .device { position: absolute; box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; text-align: center; color: #111; z-index: 10; }
+        
+        .silo { width: 50px; height: 50px; border-radius: 50%; background: var(--silo-metal); border: 2px solid #7f8c8d; }
+        .oven { width: 45px; height: 60px; background: var(--oven-body); border-radius: 4px; flex-direction: column; justify-content: flex-end; padding-bottom: 5px; }
+        .oven::before { content: ''; position: absolute; top: -12px; left: 10px; width: 25px; height: 20px; background: var(--oven-motor); border-radius: 4px 4px 0 0; }
+        .oven-tpe::before { background: linear-gradient(to top, #f39c12, #f1c40f); }
+        
+        .machine { background: var(--machine-green); border: 2px solid var(--machine-border); border-radius: 6px; color: #fff; text-shadow: 1px 1px 2px #000; flex-direction: column;}
+        .m-h { width: 140px; height: 70px; } .m-v { width: 70px; height: 140px; }
+        
+        .nodes-container { position: absolute; display: flex; gap: 4px; }
+        .m-h .nodes-container { top: -8px; left: 10px; flex-direction: row; }
+        .m-v .nodes-container { left: -8px; top: 10px; flex-direction: column; }
+        .node { width: 10px; height: 10px; background: #f1c40f; border: 2px solid #222; border-radius: 50%; }
+        .status-led { position: absolute; bottom: 5px; right: 5px; width: 8px; height: 8px; background: #0be881; border-radius: 50%; box-shadow: 0 0 10px #0be881; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* MOBİL BİLGİ KARTI (Dokununca görünür kalır) */
+        .info-card { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: max-content; background: #2f3640; border: 1px solid #00d2d3; padding: 10px; border-radius: 8px; color: #fff; font-size: 12px; font-weight: normal; text-align: left; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.9); }
+        .device.active .info-card { display: block; } /* Telefonda hover yerine active class'ı */
+
+        /* SEYYAR KONTEYNER */
+        .local-bin { position: absolute; width: 45px; height: 45px; background: #8e44ad; border: 2px solid #9b59b6; border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); touch-action: none;}
+
+        /* MOBİL UYUMLU MODAL */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px);}
+        .modal-box { background: #1e272e; border: 2px solid var(--pipe-main); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; color: #fff; box-shadow: 0 0 30px rgba(0,210,211,0.3); }
+        .m-header { font-size: 20px; font-weight: bold; color: var(--pipe-main); border-bottom: 1px dashed #555; padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .close-btn { color: #ff4757; font-size: 28px; padding: 0 10px; }
     </style>
 </head>
 <body>
 
-    <h2 style="text-align: center; color: #ecf0f1; margin-top: 20px;">BBP KUNSTSTOFFWERK - V6 DİJİTAL İKİZ KROKİSİ</h2>
-
-    <div id="scada-map">
-        
-        <!-- SİLO ÇİFTLİĞİ (Sol Alt) -->
-        <div id="zone-silos" class="zone">
-            <div class="zone-title">SİLO ÇİFTLİĞİ (Silos)</div>
-            <div class="silo-grid">
-                <!-- 18 Adet Silo -->
-                <div class="silo">1</div><div class="silo">2</div><div class="silo">3</div><div class="silo">4</div><div class="silo">5</div><div class="silo">6</div>
-                <div class="silo">7</div><div class="silo">8</div><div class="silo">9</div><div class="silo">10</div><div class="silo">11</div><div class="silo">12</div>
-                <div class="silo">13</div><div class="silo">14</div><div class="silo">15</div><div class="silo">16</div><div class="silo">17</div><div class="silo">18</div>
-            </div>
+    <div id="top-bar">
+        <div class="logo">BBP SCADA<br><span style="font-size:11px; color:#aaa;">V6 MOBİL YÖNETİM</span></div>
+        <div class="controls">
+            <button id="btn-zoom-in">+</button>
+            <button id="btn-zoom-out">-</button>
+            <button id="btn-center">⌖</button>
         </div>
-
-        <!-- BEREICH 1700 (Üst Orta) -->
-        <div id="zone-1700" class="zone">
-            <div class="zone-title">BEREICH 1700</div>
-            <div class="machine m1700" style="left: 40px; top: 50px;">1700-2</div>
-            <div class="machine m1700" style="left: 220px; top: 50px;">1700-3</div>
-        </div>
-
-        <!-- ÜRETİM HOLÜ (Sağ Taraf) -->
-        <div id="zone-halle" class="zone">
-            <div class="zone-title">PRODUKTIONSHALLE (Üretim Blokları)</div>
-            
-            <!-- Blok 1 (Yatay Makineler) -->
-            <div class="machine m-std" style="left: 50px; top: 80px;">600-4</div>
-            <div class="machine m-std" style="left: 50px; top: 150px;">600-7</div>
-            <div class="machine m-std" style="left: 50px; top: 220px;">650-2</div>
-
-            <!-- Blok 2 (Dikey Makineler - Koridorun sağı) -->
-            <div class="machine m-vertical" style="left: 250px; top: 80px;">400-2</div>
-            <div class="machine m-vertical" style="left: 320px; top: 80px;">400-3</div>
-            
-            <!-- Blok 3 (Alt Seri) -->
-            <div class="machine m-std" style="left: 250px; top: 250px;">800-1</div>
-            <div class="machine m-std" style="left: 250px; top: 320px;">850-4</div>
-            <div class="machine m-vertical" style="left: 450px; top: 250px;">1000-3</div>
-        </div>
-
-
-        <!-- ANA OMURGA TESİSATI (BACKBONE PIPES) -->
-        <!-- Silolardan çıkan ana yükselme borusu -->
-        <div class="pipe pipe-v pipe-flow" style="left: 200px; bottom: 80px; height: 350px;"></div>
-        
-        <!-- Tavandaki Ana Yatay Dağıtım Borusu -->
-        <div class="pipe pipe-h pipe-flow" style="left: 200px; top: 470px; width: 950px;"></div>
-        
-        <!-- Bereich 1700'e Giden Dal -->
-        <div class="pipe pipe-v pipe-flow" style="left: 550px; top: 210px; height: 260px;"></div>
-        
-        <!-- Üretim Holü Blok 1'e İnen Dal -->
-        <div class="pipe pipe-v pipe-flow" style="left: 800px; top: 470px; height: 180px;"></div>
-        
-        <!-- Üretim Holü Blok 2'ye İnen Dal -->
-        <div class="pipe pipe-v pipe-flow" style="left: 1050px; top: 470px; height: 100px;"></div>
-
     </div>
 
+    <div id="scada-viewport">
+        <div id="scada-canvas">
+            <!-- BÖLGELER -->
+            <div class="zone" style="width: 600px; height: 300px; left: 3000px; top: 2200px;"><div class="zone-label">NSILO (1-14)</div></div>
+            <div class="zone" style="width: 700px; height: 180px; left: 2100px; top: 2200px;"><div class="zone-label">ZENTRALE 1 (1-7) & TPE GUMMI</div></div>
+            <div class="zone" style="width: 450px; height: 150px; left: 1200px; top: 1200px;"><div class="zone-label">ZENTRALE 2 (12-16)</div></div>
+            <div class="zone" style="width: 400px; height: 150px; left: 2400px; top: 1800px;"><div class="zone-label">LOKAL STATION (8-11)</div></div>
+            <div class="zone" style="width: 500px; height: 400px; left: 1100px; top: 1400px;"><div class="zone-label">PRODUKTION (K 600 Blok)</div></div>
+            
+            <!-- BORULAR -->
+            <div class="pipe pipe-v flow-v" style="left: 2300px; top: 1600px; height: 600px;"></div>
+            <div class="pipe pipe-h flow-h" style="left: 1300px; top: 1600px; width: 1000px;"></div>
+            <div class="pipe pipe-v flow-v" style="left: 1300px; top: 1350px; height: 250px;"></div>
+
+            <!-- SEYYAR KONTEYNERLER (Dokun & Sürükle) -->
+            <div class="local-bin" id="bin1" style="left: 1600px; top: 1450px;">Boya</div>
+            <div class="local-bin" id="bin2" style="left: 1680px; top: 1450px; background:#e67e22;">Mühle</div>
+            <div class="local-bin" id="bin3" style="left: 1600px; top: 1520px; background:#34495e;">Katkı</div>
+
+            <div id="devices-container"></div>
+        </div>
+    </div>
+
+    <!-- MOBİL MODAL -->
+    <div id="modal">
+        <div class="modal-box">
+            <div class="m-header"><span id="m-title">Cihaz</span> <span class="close-btn" id="btn-close-modal">✖</span></div>
+            <div id="m-content" style="font-size:15px; line-height: 1.8;"></div>
+        </div>
+    </div>
+
+    <script>
+        const db = [
+            { id: 's1', type: 'silo', name: 'S1', mat: 'Mafill CR', x: 3050, y: 2250 },
+            { id: 's2', type: 'silo', name: 'S2', mat: 'Scolefin', x: 3120, y: 2250 },
+            { id: 's3', type: 'silo', name: 'S3', mat: 'Seculene', x: 3190, y: 2250 },
+            
+            { id: 'f1', type: 'oven', name: 'F1', x: 2150, y: 2250 },
+            { id: 'f3', type: 'oven', name: 'F3', x: 2250, y: 2250 },
+            { id: 'f7', type: 'oven', name: 'F7', x: 2450, y: 2250 },
+            { id: 'tpe1', type: 'oven oven-tpe', name: 'TPE 1', x: 2600, y: 2250, special: 'Gummi' },
+            
+            { id: 'f12', type: 'oven', name: 'F12', x: 1250, y: 1250 },
+            { id: 'f14', type: 'oven', name: 'F14', x: 1350, y: 1250 },
+            { id: 'f8', type: 'oven', name: 'F8', x: 2450, y: 1850 },
+            
+            { id: 'm650', type: 'machine', name: 'K 650-02', nodes: 4, dir: 'm-h', x: 1350, y: 1450, part: 'BBP_Kapak_Rev3' },
+            { id: 'm1000', type: 'machine', name: 'K 1000-02', nodes: 4, dir: 'm-h', x: 1350, y: 1650, part: 'Auto_Panel_Sol' },
+            { id: 'm800', type: 'machine', name: 'K 800-4', nodes: 2, dir: 'm-v', x: 1800, y: 1850, part: 'Kutu_Alt_Gövde' }
+        ];
+
+        const container = document.getElementById('devices-container');
+        
+        db.forEach(dev => {
+            let el = document.createElement('div');
+            el.className = `device ${dev.type} ${dev.dir || ''}`;
+            el.style.left = dev.x + 'px'; el.style.top = dev.y + 'px';
+            
+            let nodesHtml = '';
+            if (dev.nodes) {
+                nodesHtml = `<div class="nodes-container">`;
+                for(let i=0; i<dev.nodes; i++) nodesHtml += `<div class="node"></div>`;
+                nodesHtml += `</div><div class="status-led"></div>`;
+            }
+
+            let infoHtml = `<div class="info-card">
+                <div style="color:var(--pipe-main); font-weight:bold; border-bottom:1px solid #555; padding-bottom:5px; margin-bottom:5px;">${dev.name}</div>
+                ${dev.mat ? 'Doluluk: %85<br>Mal: ' + dev.mat : (dev.part ? 'Üretim: ' + dev.part : 'Durum: Hazır')}
+                <br><span style="font-size:11px; color:#f1c40f; display:block; margin-top:5px;">(Ayarlar için çift dokun)</span>
+            </div>`;
+
+            el.innerHTML = nodesHtml + dev.name + infoHtml;
+            
+            // MOBİL ÇİFT DOKUNMA (Double Tap) MANTIĞI
+            let lastTap = 0;
+            el.addEventListener('touchend', (e) => {
+                let currentTime = new Date().getTime();
+                let tapLength = currentTime - lastTap;
+                
+                // Cihazın bilgi kartını aç/kapat (Tek Dokunuş - Hover alternatifi)
+                document.querySelectorAll('.device').forEach(d => d.classList.remove('active'));
+                el.classList.add('active');
+
+                // Çift Dokunma Algılayıcı (< 300ms)
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    document.getElementById('m-title').innerText = dev.name + " Kontrol";
+                    let content = dev.type === 'machine' ? 
+                        `<div style="margin-bottom:10px;"><b>Aktif Kalıp:</b> <span style="color:#f1c40f">${dev.part}</span></div>
+                        <div style="background:#2f3640; padding:15px; border-radius:8px;">
+                            <b>Bağlantı Reçetesi:</b><br><br>
+                            📥 Giriş 1: <span style="color:#00d2d3">Fırın 3 (PP)</span><br>
+                            📥 Giriş 2: <span style="color:#00d2d3">Fırın 14 (ABS)</span><br>
+                            📥 Giriş 3: ${dev.nodes >= 3 ? '<span style="color:#e67e22">TPE 1 (Gummi)</span>' : 'Boş'}<br>
+                            📥 Giriş 4: ${dev.nodes >= 4 ? '<span style="color:#9b59b6">Seyyar Boya</span>' : 'Boş'}
+                        </div>` : `Durum: Aktif.<br><br>Gelişmiş rota atamaları ana veritabanına bağlandığında açılacaktır.`;
+                    
+                    document.getElementById('m-content').innerHTML = content;
+                    document.getElementById('modal').style.display = 'flex';
+                }
+                lastTap = currentTime;
+            });
+            
+            container.appendChild(el);
+        });
+
+        // MOBİL ZOOM VE PAN MOTORU
+        const canvas = document.getElementById('scada-canvas');
+        let scale = 0.35, panX = -300, panY = -300;
+        let isDragging = false, startX, startY;
+
+        function updateTransform() { canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
+
+        document.getElementById('btn-zoom-in').addEventListener('touchstart', () => { scale = Math.min(scale * 1.3, 2.5); updateTransform(); });
+        document.getElementById('btn-zoom-out').addEventListener('touchstart', () => { scale = Math.max(scale * 0.7, 0.1); updateTransform(); });
+        document.getElementById('btn-center').addEventListener('touchstart', () => { scale = 0.35; panX = -300; panY = -300; updateTransform(); });
+        document.getElementById('btn-close-modal').addEventListener('touchstart', () => { document.getElementById('modal').style.display = 'none'; });
+
+        // Haritada Parmakla Gezinme
+        document.getElementById('scada-viewport').addEventListener('touchstart', e => {
+            if(e.target.classList.contains('local-bin') || e.target.closest('.device')) return; 
+            isDragging = true; 
+            startX = e.touches[0].clientX - panX; 
+            startY = e.touches[0].clientY - panY;
+            canvas.style.transition = 'none';
+        });
+        window.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            panX = e.touches[0].clientX - startX; 
+            panY = e.touches[0].clientY - startY;
+            updateTransform();
+        });
+        window.addEventListener('touchend', () => { isDragging = false; canvas.style.transition = 'transform 0.1s'; });
+
+        // MOBİL SÜRÜKLE BIRAK (Konteynerler İçin Touch API)
+        let draggedBin = null, offsetX = 0, offsetY = 0;
+        
+        document.querySelectorAll('.local-bin').forEach(bin => {
+            bin.addEventListener('touchstart', e => {
+                e.stopPropagation(); // Arka planın kaymasını durdur
+                draggedBin = bin;
+                let rect = bin.getBoundingClientRect();
+                offsetX = (e.touches[0].clientX - rect.left) / scale;
+                offsetY = (e.touches[0].clientY - rect.top) / scale;
+                bin.style.zIndex = 2000;
+                bin.style.transform = "scale(1.2)"; // Parmağın altındayken büyüsün
+            }, {passive: false});
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!draggedBin) return;
+            e.preventDefault(); // Ekranın yukarı/aşağı kaymasını zorla durdur
+            let canvasRect = canvas.getBoundingClientRect();
+            let newX = (e.touches[0].clientX - canvasRect.left) / scale - offsetX;
+            let newY = (e.touches[0].clientY - canvasRect.top) / scale - offsetY;
+            draggedBin.style.left = newX + 'px';
+            draggedBin.style.top = newY + 'px';
+        }, {passive: false});
+
+        window.addEventListener('touchend', () => {
+            if(draggedBin) { 
+                draggedBin.style.zIndex = 100; 
+                draggedBin.style.transform = "scale(1)";
+                draggedBin = null; 
+            }
+        });
+
+        // Ekranda boş bir yere dokununca açık olan bilgi kartlarını (hover etkisini) kapat
+        document.getElementById('scada-viewport').addEventListener('touchstart', (e) => {
+            if(!e.target.closest('.device')) {
+                document.querySelectorAll('.device').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        updateTransform();
+    </script>
 </body>
 </html>
