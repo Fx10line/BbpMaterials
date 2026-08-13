@@ -3,125 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BBP Kunststoffwerk - SCADA v3.1</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>BBP SCADA V6 - Master (Mobil & Masaüstü)</title>
+    <style>
+        :root {
+            --bg-dark: #0b0c10; --grid-color: rgba(255, 255, 255, 0.05);
+            --machine-green: linear-gradient(145deg, #78e08f, #38ada9);
+            --machine-border: #b8e994;
+            --silo-metal: radial-gradient(circle at 30% 30%, #ecf0f1, #95a5a6, #2c3e50);
+            --oven-body: linear-gradient(to right, #bdc3c7, #7f8c8d);
+            --oven-motor: linear-gradient(to top, #e67e22, #d35400);
+            --pipe-main: #00d2d3; --pipe-glow: 0 0 10px #00d2d3, 0 0 15px #00d2d3;
+            --text-light: #ecf0f1;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { margin: 0; background-color: var(--bg-dark); color: var(--text-light); overflow: hidden; touch-action: none; overscroll-behavior: none; }
+
+        /* ÜST KONTROL PANELİ */
+        #top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: rgba(11, 12, 16, 0.95); border-bottom: 2px solid #1e272e; z-index: 2000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; backdrop-filter: blur(10px); }
+        .logo { font-size: 16px; font-weight: bold; color: var(--pipe-main); text-shadow: 0 0 10px var(--pipe-main); line-height: 1.1; }
+        
+        .controls { display: flex; gap: 5px; align-items: center; }
+        .controls button { background: #2f3640; color: white; border: 1px solid #718093; padding: 12px 15px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.1s;}
+        .controls button:active { background: var(--pipe-main); color: #000; transform: scale(0.95);}
+
+        /* SCADA SAHNESİ VE PAN/ZOOM */
+        #scada-viewport { width: 100vw; height: 100vh; position: relative; overflow: hidden; cursor: grab; }
+        #scada-viewport:active { cursor: grabbing; }
+        #scada-canvas { width: 4500px; height: 3500px; position: absolute; top: 0; left: 0; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 50px 50px; transform-origin: 0 0; }
+
+        /* BÖLGELER & BORULAR */
+        .zone { position: absolute; border: 2px dashed rgba(52, 152, 219, 0.4); border-radius: 10px; background: rgba(52, 152, 219, 0.03); pointer-events: none;}
+        .zone-label { position: absolute; top: -12px; left: 20px; background: var(--bg-dark); padding: 0 10px; color: #3498db; font-size: 14px; font-weight: bold; }
+        .pipe { position: absolute; background: var(--pipe-main); box-shadow: var(--pipe-glow); z-index: 1; pointer-events: none;}
+        .pipe-h { height: 6px; } .pipe-v { width: 6px; }
+        .flow-h { background: linear-gradient(90deg, #00d2d3 25%, #fff 50%, #00d2d3 75%); background-size: 200% 100%; animation: flowH 1s linear infinite; }
+        .flow-v { background: linear-gradient(180deg, #00d2d3 25%, #fff 50%, #00d2d3 75%); background-size: 100% 200%; animation: flowV 1s linear infinite; }
+        @keyframes flowH { to { background-position: -200% 0; } } @keyframes flowV { to { background-position: 0 -200%; } }
+
+        /* CİHAZLAR VE BİLGİ KARTI */
+        .device { position: absolute; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; text-align: center; color: #111; z-index: 10; transition: transform 0.2s; }
+        /* Masaüstü Hover Etkisi (Mobilde dokunma ile aktif olur) */
+        @media (hover: hover) and (pointer: fine) {
+            .device:hover { transform: scale(1.1); z-index: 50; box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
+            .device:hover .info-card { display: block; bottom: 135%; }
+        }
+        
+        .silo { width: 50px; height: 50px; border-radius: 50%; background: var(--silo-metal); border: 2px solid #7f8c8d; }
+        .oven { width: 45px; height: 60px; background: var(--oven-body); border-radius: 4px; flex-direction: column; justify-content: flex-end; padding-bottom: 5px; }
+        .oven::before { content: ''; position: absolute; top: -12px; left: 10px; width: 25px; height: 20px; background: var(--oven-motor); border-radius: 4px 4px 0 0; }
+        .oven-tpe::before { background: linear-gradient(to top, #f39c12, #f1c40f); }
+        
+        .machine { background: var(--machine-green); border: 2px solid var(--machine-border); border-radius: 6px; color: #fff; text-shadow: 1px 1px 2px #000; flex-direction: column;}
+        .m-h { width: 140px; height: 70px; } .m-v { width: 70px; height: 140px; }
+        
+        .nodes-container { position: absolute; display: flex; gap: 4px; }
+        .m-h .nodes-container { top: -8px; left: 10px; flex-direction: row; }
+        .m-v .nodes-container { left: -8px; top: 10px; flex-direction: column; }
+        .node { width: 10px; height: 10px; background: #f1c40f; border: 2px solid #222; border-radius: 50%; }
+        .status-led { position: absolute; bottom: 5px; right: 5px; width: 8px; height: 8px; background: #0be881; border-radius: 50%; box-shadow: 0 0 10px #0be881; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* BİLGİ KARTI */
+        .info-card { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: max-content; background: #2f3640; border: 1px solid #00d2d3; padding: 10px; border-radius: 8px; color: #fff; font-size: 12px; font-weight: normal; text-align: left; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.9); }
+        /* Mobil (Dokunmatik) cihazlarda kartın açık kalması için */
+        .device.active-touch .info-card { display: block; bottom: 135%; }
+
+        /* SEYYAR KONTEYNER */
+        .local-bin { position: absolute; width: 45px; height: 45px; background: #8e44ad; border: 2px solid #9b59b6; border-radius: 6px; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: grab; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); touch-action: none;}
+        .local-bin:active { cursor: grabbing; box-shadow: 0 8px 20px rgba(0,0,0,0.8); }
+
+        /* MODAL */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px);}
+        .modal-box { background: #1e272e; border: 2px solid var(--pipe-main); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; color: #fff; box-shadow: 0 0 30px rgba(0,210,211,0.3); }
+        .m-header { font-size: 20px; font-weight: bold; color: var(--pipe-main); border-bottom: 1px dashed #555; padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .close-btn { color: #ff4757; font-size: 28px; padding: 0 10px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-    <!-- KONTROL PANELİ -->
-    <div id="kontrol-paneli">
-        <h2 id="panel-baslik">🛠️ BBP Paneli</h2>
-        <div id="panel-icerik">
-            <div class="zoom-araclari">
-                <button id="btn-zoom-out">-</button>
-                <span id="zoom-seviyesi">100%</span>
-                <button id="btn-zoom-in">+</button>
-            </div>
-            <button id="btn-kilitle" class="kilit-acik">🔓 Konumlar Serbest</button>
-            <p style="font-size:10px; color:#aaa; margin:6px 0 0 0; text-align:center;">Ayarlar için kutudaki ⚙️ ikonuna tıklayın.</p>
-            <div style="font-size:9px; color:#2ecc71; text-align:center; margin-top:4px; border-top:1px solid #444; padding-top:2px; font-weight:bold;">v3.1 - SVG & Optimizasyon</div>
+    <div id="top-bar">
+        <div class="logo">BBP SCADA<br><span style="font-size:11px; color:#aaa;">V6 MASTER (PC & MOBİL)</span></div>
+        <div class="controls">
+            <button id="btn-zoom-in">+</button>
+            <button id="btn-zoom-out">-</button>
+            <button id="btn-center">⌖ Merkez</button>
         </div>
     </div>
 
-    <!-- MİKRO-DENETİM BİLDİRİMİ -->
-    <div id="audit-toast" class="audit-toast" style="display:none;">
-        <div class="audit-icerik">
-            <span id="audit-mesaj">Silo 1 hala aynı mı?</span>
-            <div class="audit-butonlar">
-                <button id="btn-audit-evet" class="btn-onay">👍 Evet</button>
-                <button id="btn-audit-hayir" class="btn-red">🛑 Hayır</button>
-            </div>
+    <div id="scada-viewport">
+        <div id="scada-canvas">
+            <!-- BÖLGELER -->
+            <div class="zone" style="width: 600px; height: 300px; left: 3000px; top: 2200px;"><div class="zone-label">NSILO (1-14)</div></div>
+            <div class="zone" style="width: 700px; height: 180px; left: 2100px; top: 2200px;"><div class="zone-label">ZENTRALE 1 (1-7) & TPE GUMMI</div></div>
+            <div class="zone" style="width: 450px; height: 150px; left: 1200px; top: 1200px;"><div class="zone-label">ZENTRALE 2 (12-16)</div></div>
+            <div class="zone" style="width: 400px; height: 150px; left: 2400px; top: 1800px;"><div class="zone-label">LOKAL STATION (8-11)</div></div>
+            <div class="zone" style="width: 500px; height: 400px; left: 1100px; top: 1400px;"><div class="zone-label">PRODUKTION (K 600 Blok)</div></div>
+            
+            <!-- BORULAR -->
+            <div class="pipe pipe-v flow-v" style="left: 2300px; top: 1600px; height: 600px;"></div>
+            <div class="pipe pipe-h flow-h" style="left: 1300px; top: 1600px; width: 1000px;"></div>
+            <div class="pipe pipe-v flow-v" style="left: 1300px; top: 1350px; height: 250px;"></div>
+
+            <!-- SEYYAR KONTEYNERLER -->
+            <div class="local-bin" style="left: 1600px; top: 1450px;">Boya</div>
+            <div class="local-bin" style="left: 1680px; top: 1450px; background:#e67e22;">Mühle</div>
+            <div class="local-bin" style="left: 1600px; top: 1520px; background:#34495e;">Katkı</div>
+
+            <div id="devices-container"></div>
         </div>
     </div>
 
-    <!-- ANA HARİTA (SAHNE) -->
-    <main id="fabrika-sahasi">
-        <div id="sahne">
-            <!-- CANVAS GİTTİ, SVG GELDİ (Sonsuz alan, %100 netlik) -->
-            <svg id="cizim-alani" style="position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1;"></svg>
-            <div id="cihazlar-kapsayici"></div>
+    <!-- MODAL -->
+    <div id="modal">
+        <div class="modal-box">
+            <div class="m-header"><span id="m-title">Cihaz</span> <span class="close-btn" id="btn-close-modal">✖</span></div>
+            <div id="m-content" style="font-size:15px; line-height: 1.8;"></div>
         </div>
-    </main>
+    </div>
 
-    <!-- YENİ: KAYAR ÇEKMECE PANEL (SİYAH MODAL YERİNE) -->
-    <div id="ayar-paneli" class="yan-panel">
-        <div class="panel-baslik-bar">
-            <h3 id="modal-baslik" style="margin:0; font-size:18px;">Ayarlar</h3>
-            <span class="kapat-btn" id="modal-kapat">&times;</span>
-        </div>
+    <script>
+        const db = [
+            { id: 's1', type: 'silo', name: 'S1', mat: 'Mafill CR', x: 3050, y: 2250 },
+            { id: 's2', type: 'silo', name: 'S2', mat: 'Scolefin', x: 3120, y: 2250 },
+            { id: 's3', type: 'silo', name: 'S3', mat: 'Seculene', x: 3190, y: 2250 },
+            
+            { id: 'f1', type: 'oven', name: 'F1', x: 2150, y: 2250 },
+            { id: 'f3', type: 'oven', name: 'F3', x: 2250, y: 2250 },
+            { id: 'f7', type: 'oven', name: 'F7', x: 2450, y: 2250 },
+            { id: 'tpe1', type: 'oven oven-tpe', name: 'TPE 1', x: 2600, y: 2250, special: 'Gummi' },
+            
+            { id: 'f12', type: 'oven', name: 'F12', x: 1250, y: 1250 },
+            { id: 'f14', type: 'oven', name: 'F14', x: 1350, y: 1250 },
+            { id: 'f8', type: 'oven', name: 'F8', x: 2450, y: 1850 },
+            
+            { id: 'm650', type: 'machine', name: 'K 650-02', nodes: 4, dir: 'm-h', x: 1350, y: 1450, part: 'BBP_Kapak_Rev3' },
+            { id: 'm1000', type: 'machine', name: 'K 1000-02', nodes: 4, dir: 'm-h', x: 1350, y: 1650, part: 'Auto_Panel_Sol' },
+            { id: 'm800', type: 'machine', name: 'K 800-4', nodes: 2, dir: 'm-v', x: 1800, y: 1850, part: 'Kutu_Alt_Gövde' }
+        ];
+
+        const container = document.getElementById('devices-container');
         
-        <div class="panel-icerik-kaydirma">
-            <div id="makina-recete-alani" style="display:none; background:#dff9fb; padding:10px; border-radius:5px; margin-bottom:10px;">
-                <label style="color:#2980b9; font-weight:bold; font-size:12px;">🧠 Hafızadaki Reçeteler:</label>
-                <select id="modal-recete-secici" class="modal-input" style="padding:8px; margin-top:4px;"></select>
-                <button id="btn-recete-yukle" style="background:#2980b9; color:#fff; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; margin-top:5px;">🔄 Reçeteyi Haritaya Bağla</button>
-            </div>
+        // --- CİHAZ YÜKLEME VE ETKİLEŞİM ---
+        db.forEach(dev => {
+            let el = document.createElement('div');
+            el.className = `device ${dev.type} ${dev.dir || ''}`;
+            el.style.left = dev.x + 'px'; el.style.top = dev.y + 'px';
+            
+            let nodesHtml = '';
+            if (dev.nodes) {
+                nodesHtml = `<div class="nodes-container">`;
+                for(let i=0; i<dev.nodes; i++) nodesHtml += `<div class="node"></div>`;
+                nodesHtml += `</div><div class="status-led"></div>`;
+            }
 
-            <label id="modal-etiket">Ana Bilgi / Ürün Kodu:</label>
-            <input type="text" id="modal-input-veri" class="modal-input">
-            
-            <div id="silo-ozel-bilgiler" style="display: none;">
-                <label>Artikel Kodu:</label>
-                <input type="text" id="modal-input-kod" class="modal-input">
-                <label>Teknik Özellikler / Notlar:</label>
-                <textarea id="modal-input-teknik" class="modal-input" rows="2"></textarea>
-            </div>
+            let infoHtml = `<div class="info-card">
+                <div style="color:var(--pipe-main); font-weight:bold; border-bottom:1px solid #555; padding-bottom:5px; margin-bottom:5px;">${dev.name}</div>
+                ${dev.mat ? 'Doluluk: %85<br>Mal: ' + dev.mat : (dev.part ? 'Üretim: ' + dev.part : 'Durum: Hazır')}
+                <br><span style="font-size:11px; color:#f1c40f; display:block; margin-top:5px;">(Ayarlar için çift tıkla/dokun)</span>
+            </div>`;
 
-            <div id="ek-besleme-alani" style="display: none; background: #ffeaa7; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                <h4 style="margin: 0 0 8px 0; color: #d35400; font-size:13px;">➕ Ek Konteyner / Dozajlama</h4>
-                <div id="ek-slot-1">
-                    <label style="font-size:11px; font-weight:bold;">1. Ünite:</label>
-                    <div style="display:flex; gap:5px; margin-bottom:8px;">
-                        <select id="modal-ek-tip-1" class="modal-input" style="padding:6px; margin:0; flex:1;">
-                            <option value="yok">Yok</option><option value="merkez">Merkezî</option><option value="lokal">Lokal</option>
-                        </select>
-                        <input type="text" id="modal-ek-malzeme-1" class="modal-input" placeholder="Malzeme..." style="padding:6px; margin:0; flex:2;">
-                    </div>
-                </div>
-                <div id="ek-slot-2" style="display: none; border-top:1px dashed #d35400; padding-top:8px;">
-                    <label style="font-size:11px; font-weight:bold;">2. Ünite:</label>
-                    <div style="display:flex; gap:5px; margin-bottom:8px;">
-                        <select id="modal-ek-tip-2" class="modal-input" style="padding:6px; margin:0; flex:1;">
-                            <option value="yok">Yok</option><option value="merkez">Merkezî</option><option value="lokal">Lokal</option>
-                        </select>
-                        <input type="text" id="modal-ek-malzeme-2" class="modal-input" placeholder="Malzeme..." style="padding:6px; margin:0; flex:2;">
-                    </div>
-                </div>
-                <div id="ek-slot-3" style="display: none; border-top:1px dashed #d35400; padding-top:8px;">
-                    <label style="font-size:11px; font-weight:bold;">3. Ünite:</label>
-                    <div style="display:flex; gap:5px;">
-                        <select id="modal-ek-tip-3" class="modal-input" style="padding:6px; margin:0; flex:1;">
-                            <option value="yok">Yok</option><option value="merkez">Merkezî</option><option value="lokal">Lokal</option>
-                        </select>
-                        <input type="text" id="modal-ek-malzeme-3" class="modal-input" placeholder="Malzeme..." style="padding:6px; margin:0; flex:2;">
-                    </div>
-                </div>
-            </div>
+            el.innerHTML = nodesHtml + dev.name + infoHtml;
             
-            <div id="gelen-baglantilar-alani" style="background: #eef2f5; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
-                <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size:14px;">📥 Gelen Malzemeler</h4>
-                <ul id="gelen-listesi" style="margin: 0; padding-left: 0; list-style:none; font-size: 13px; color: #444;"></ul>
-            </div>
-            
-            <div id="modal-baglanti-alani">
-                <hr style="border:0; border-top:1px solid #ccc; margin:10px 0;">
-                <h4 style="margin-bottom: 5px; font-size:14px;">📤 Giden Bağlantı Seçimi</h4>
-                <div id="silo-kanallari-inputlari">
-                    <label style="color:#f1c40f; font-weight:bold; font-size:11px;">Kanal 1 Hedefleri:</label> <div id="modal-kanal-1" class="hedef-secici"></div>
-                    <label style="color:#3498db; font-weight:bold; font-size:11px;">Kanal 2 Hedefleri:</label> <div id="modal-kanal-2" class="hedef-secici"></div>
-                    <label style="color:#e74c3c; font-weight:bold; font-size:11px;">Kanal 3 Hedefleri:</label> <div id="modal-kanal-3" class="hedef-secici"></div>
-                    <label style="color:#bdc3c7; font-weight:bold; font-size:11px;">Kanal 4 Hedefleri:</label> <div id="modal-kanal-4" class="hedef-secici"></div>
-                </div>
-                <div id="firin-hedef-inputu" style="display: none;">
-                    <label style="color:#e67e22; font-weight:bold; font-size:11px;">Hedef Makinalar:</label> <div id="modal-firin-hedef" class="hedef-secici"></div>
-                </div>
-            </div>
-            
-            <button id="modal-kaydet" class="kaydet-btn">Kaydet</button>
-            <button id="modal-kapat-alt" class="kapat-alt-btn">Kapat</button>
-        </div>
-    </div>
+            // MODAL AÇMA FONKSİYONU
+            const openDeviceModal = () => {
+                document.getElementById('m-title').innerText = dev.name + " Kontrol";
+                let content = dev.type === 'machine' ? 
+                    `<div style="margin-bottom:10px;"><b>Aktif Kalıp:</b> <span style="color:#f1c40f">${dev.part}</span></div>
+                    <div style="background:#2f3640; padding:15px; border-radius:8px;">
+                        <b>Bağlantı Reçetesi:</b><br><br>
+                        📥 Giriş 1: <span style="color:#00d2d3">Fırın 3 (PP)</span><br>
+                        📥 Giriş 2: <span style="color:#00d2d3">Fırın 14 (ABS)</span><br>
+                        📥 Giriş 3: ${dev.nodes >= 3 ? '<span style="color:#e67e22">TPE 1 (Gummi)</span>' : 'Boş'}<br>
+                        📥 Giriş 4: ${dev.nodes >= 4 ? '<span style="color:#9b59b6">Seyyar Boya</span>' : 'Boş'}
+                    </div>` : `Durum: Aktif.<br><br>Sıcaklık ve rota atamaları ana DB'den çekilecek.`;
+                
+                document.getElementById('m-content').innerHTML = content;
+                document.getElementById('modal').style.display = 'flex';
+            };
 
-    <script src="js/script.js"></script>
+            // MASAÜSTÜ: Çift Tıklama
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                openDeviceModal();
+            });
+
+            // MOBİL: Çift Dokunma ve Hover Simülasyonu
+            let lastTap = 0;
+            el.addEventListener('touchend', (e) => {
+                let currentTime = new Date().getTime();
+                let tapLength = currentTime - lastTap;
+                
+                // Bilgi Kartını Göster (Mobil Hover)
+                document.querySelectorAll('.device').forEach(d => d.classList.remove('active-touch'));
+                el.classList.add('active-touch');
+
+                // Çift Dokunma Tespiti (< 300ms)
+                if (tapLength < 300 && tapLength > 0) {
+                    e.preventDefault();
+                    openDeviceModal();
+                }
+                lastTap = currentTime;
+            });
+            
+            container.appendChild(el);
+        });
+
+        // MOBİL MODAL KAPATMA VE EKRAN BOŞLUĞUNA DOKUNMA
+        document.getElementById('btn-close-modal').addEventListener('click', () => { document.getElementById('modal').style.display = 'none'; });
+        document.getElementById('scada-viewport').addEventListener('touchstart', (e) => {
+            if(!e.target.closest('.device')) {
+                document.querySelectorAll('.device').forEach(d => d.classList.remove('active-touch'));
+            }
+        });
+
+        // --- ZOOM VE PAN (Masaüstü + Mobil Birleşik) ---
+        const canvas = document.getElementById('scada-canvas');
+        const viewport = document.getElementById('scada-viewport');
+        let scale = 0.35, panX = -300, panY = -300;
+        let isDragging = false, startX, startY;
+
+        function updateTransform() { canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
+
+        // Buton Kontrolleri
+        document.getElementById('btn-zoom-in').addEventListener('click', () => { scale = Math.min(scale * 1.3, 2.5); updateTransform(); });
+        document.getElementById('btn-zoom-out').addEventListener('click', () => { scale = Math.max(scale * 0.7, 0.1); updateTransform(); });
+        document.getElementById('btn-center').addEventListener('click', () => { scale = 0.35; panX = -300; panY = -300; updateTransform(); });
+
+        // MASAÜSTÜ Fare Pan
+        viewport.addEventListener('mousedown', e => {
+            if(e.target.classList.contains('local-bin') || e.target.closest('.device')) return; 
+            isDragging = true; 
+            startX = e.clientX - panX; startY = e.clientY - panY;
+            canvas.style.transition = 'none';
+        });
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            panX = e.clientX - startX; panY = e.clientY - startY;
+            updateTransform();
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; canvas.style.transition = 'transform 0.1s'; });
+
+        // MOBİL Dokunmatik Pan
+        viewport.addEventListener('touchstart', e => {
+            if(e.target.classList.contains('local-bin') || e.target.closest('.device')) return; 
+            isDragging = true; 
+            startX = e.touches[0].clientX - panX; startY = e.touches[0].clientY - panY;
+            canvas.style.transition = 'none';
+        });
+        window.addEventListener('touchmove', e => {
+            if (!isDragging || e.touches.length !== 1) return;
+            panX = e.touches[0].clientX - startX; panY = e.touches[0].clientY - startY;
+            updateTransform();
+        }, {passive: false});
+        window.addEventListener('touchend', () => { isDragging = false; canvas.style.transition = 'transform 0.1s'; });
+
+        // --- SÜRÜKLE BIRAK (Masaüstü + Mobil Birleşik) ---
+        let draggedBin = null, offsetX = 0, offsetY = 0;
+        
+        document.querySelectorAll('.local-bin').forEach(bin => {
+            // MASAÜSTÜ
+            bin.addEventListener('mousedown', e => {
+                e.stopPropagation(); draggedBin = bin;
+                let rect = bin.getBoundingClientRect();
+                offsetX = (e.clientX - rect.left) / scale; offsetY = (e.clientY - rect.top) / scale;
+                bin.style.zIndex = 2000;
+            });
+            // MOBİL
+            bin.addEventListener('touchstart', e => {
+                e.stopPropagation(); draggedBin = bin;
+                let rect = bin.getBoundingClientRect();
+                offsetX = (e.touches[0].clientX - rect.left) / scale; offsetY = (e.touches[0].clientY - rect.top) / scale;
+                bin.style.zIndex = 2000; bin.style.transform = "scale(1.2)";
+            }, {passive: false});
+        });
+
+        // Ortak Sürükleme Mantığı
+        const handleDragMove = (clientX, clientY, e) => {
+            if (!draggedBin) return;
+            if (e && e.preventDefault) e.preventDefault();
+            let canvasRect = canvas.getBoundingClientRect();
+            let newX = (clientX - canvasRect.left) / scale - offsetX;
+            let newY = (clientY - canvasRect.top) / scale - offsetY;
+            draggedBin.style.left = newX + 'px'; draggedBin.style.top = newY + 'px';
+        };
+
+        window.addEventListener('mousemove', e => { if (draggedBin) handleDragMove(e.clientX, e.clientY, e); });
+        window.addEventListener('touchmove', e => { if (draggedBin) handleDragMove(e.touches[0].clientX, e.touches[0].clientY, e); }, {passive: false});
+
+        // Ortak Bırakma Mantığı
+        const handleDragEnd = () => {
+            if(draggedBin) { 
+                draggedBin.style.zIndex = 100; 
+                draggedBin.style.transform = "scale(1)"; 
+                draggedBin = null; 
+            }
+        };
+        window.addEventListener('mouseup', handleDragEnd);
+        window.addEventListener('touchend', handleDragEnd);
+
+        updateTransform();
+    </script>
 </body>
 </html>
