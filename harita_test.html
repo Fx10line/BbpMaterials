@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBP SCADA V6 - Layout Prototipi</title>
+    <style>
+        body { margin: 0; background-color: #0f1115; color: #ecf0f1; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        
+        /* Arka plan ızgarası */
+        #scada-map {
+            width: 1400px; height: 900px; position: relative; margin: 20px auto;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 30px 30px;
+            border: 2px solid #2c3e50; border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* Bölge (Halle) Çerçeveleri */
+        .zone { position: absolute; border: 2px dashed rgba(52, 152, 219, 0.4); border-radius: 8px; background: rgba(52, 152, 219, 0.05); }
+        .zone-title { position: absolute; top: -12px; left: 20px; background: #0f1115; padding: 0 10px; color: #3498db; font-weight: bold; font-size: 14px; letter-spacing: 1px;}
+        
+        #zone-silos { width: 300px; height: 200px; left: 50px; bottom: 80px; }
+        #zone-1700 { width: 400px; height: 160px; left: 350px; top: 50px; }
+        #zone-halle { width: 600px; height: 450px; right: 50px; top: 250px; }
+
+        /* Silolar (Sistemin Kalbi) */
+        .silo-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 25px 15px; }
+        .silo { width: 35px; height: 35px; background: #34495e; border-radius: 50%; border: 2px solid #bdc3c7; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;}
+
+        /* Makineler */
+        .machine { position: absolute; background: linear-gradient(145deg, #10ac84, #1dd1a1); border: 2px solid #0be881; border-radius: 6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        /* Bereich 1700 Makineleri (Büyük) */
+        .m1700 { width: 120px; height: 60px; }
+        
+        /* Halle Makineleri (Standart) */
+        .m-std { width: 80px; height: 40px; }
+        .m-vertical { width: 40px; height: 80px; }
+
+        /* ANA OMURGA (Ciks Boru Hattı) */
+        .pipe { position: absolute; background: #00d2d3; box-shadow: 0 0 15px #00d2d3; z-index: 5; opacity: 0.8;}
+        .pipe-h { height: 6px; }
+        .pipe-v { width: 6px; }
+        .pipe-flow { animation: flowAnim 2s linear infinite; background: linear-gradient(90deg, #00d2d3, #fff, #00d2d3); background-size: 200% 100%;}
+        
+        @keyframes flowAnim { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align: center; color: #ecf0f1; margin-top: 20px;">BBP KUNSTSTOFFWERK - V6 DİJİTAL İKİZ KROKİSİ</h2>
+
+    <div id="scada-map">
+        
+        <!-- SİLO ÇİFTLİĞİ (Sol Alt) -->
+        <div id="zone-silos" class="zone">
+            <div class="zone-title">SİLO ÇİFTLİĞİ (Silos)</div>
+            <div class="silo-grid">
+                <!-- 18 Adet Silo -->
+                <div class="silo">1</div><div class="silo">2</div><div class="silo">3</div><div class="silo">4</div><div class="silo">5</div><div class="silo">6</div>
+                <div class="silo">7</div><div class="silo">8</div><div class="silo">9</div><div class="silo">10</div><div class="silo">11</div><div class="silo">12</div>
+                <div class="silo">13</div><div class="silo">14</div><div class="silo">15</div><div class="silo">16</div><div class="silo">17</div><div class="silo">18</div>
+            </div>
+        </div>
+
+        <!-- BEREICH 1700 (Üst Orta) -->
+        <div id="zone-1700" class="zone">
+            <div class="zone-title">BEREICH 1700</div>
+            <div class="machine m1700" style="left: 40px; top: 50px;">1700-2</div>
+            <div class="machine m1700" style="left: 220px; top: 50px;">1700-3</div>
+        </div>
+
+        <!-- ÜRETİM HOLÜ (Sağ Taraf) -->
+        <div id="zone-halle" class="zone">
+            <div class="zone-title">PRODUKTIONSHALLE (Üretim Blokları)</div>
+            
+            <!-- Blok 1 (Yatay Makineler) -->
+            <div class="machine m-std" style="left: 50px; top: 80px;">600-4</div>
+            <div class="machine m-std" style="left: 50px; top: 150px;">600-7</div>
+            <div class="machine m-std" style="left: 50px; top: 220px;">650-2</div>
+
+            <!-- Blok 2 (Dikey Makineler - Koridorun sağı) -->
+            <div class="machine m-vertical" style="left: 250px; top: 80px;">400-2</div>
+            <div class="machine m-vertical" style="left: 320px; top: 80px;">400-3</div>
+            
+            <!-- Blok 3 (Alt Seri) -->
+            <div class="machine m-std" style="left: 250px; top: 250px;">800-1</div>
+            <div class="machine m-std" style="left: 250px; top: 320px;">850-4</div>
+            <div class="machine m-vertical" style="left: 450px; top: 250px;">1000-3</div>
+        </div>
+
+
+        <!-- ANA OMURGA TESİSATI (BACKBONE PIPES) -->
+        <!-- Silolardan çıkan ana yükselme borusu -->
+        <div class="pipe pipe-v pipe-flow" style="left: 200px; bottom: 80px; height: 350px;"></div>
+        
+        <!-- Tavandaki Ana Yatay Dağıtım Borusu -->
+        <div class="pipe pipe-h pipe-flow" style="left: 200px; top: 470px; width: 950px;"></div>
+        
+        <!-- Bereich 1700'e Giden Dal -->
+        <div class="pipe pipe-v pipe-flow" style="left: 550px; top: 210px; height: 260px;"></div>
+        
+        <!-- Üretim Holü Blok 1'e İnen Dal -->
+        <div class="pipe pipe-v pipe-flow" style="left: 800px; top: 470px; height: 180px;"></div>
+        
+        <!-- Üretim Holü Blok 2'ye İnen Dal -->
+        <div class="pipe pipe-v pipe-flow" style="left: 1050px; top: 470px; height: 100px;"></div>
+
+    </div>
+
+</body>
+</html>
